@@ -1,41 +1,80 @@
+import antfu from '@antfu/eslint-config';
 import prettier from 'eslint-config-prettier';
-import { fileURLToPath } from 'node:url';
-import { includeIgnoreFile } from '@eslint/compat';
-import js from '@eslint/js';
 import svelte from 'eslint-plugin-svelte';
-import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import ts from 'typescript-eslint';
+
 import svelteConfig from './svelte.config.js';
 
-const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
-
-export default defineConfig(
-	includeIgnoreFile(gitignorePath),
-	js.configs.recommended,
-	...ts.configs.recommended,
-	...svelte.configs.recommended,
-	prettier,
-	...svelte.configs.prettier,
-	{
-		languageOptions: { globals: { ...globals.browser, ...globals.node } },
-
-		rules: {
-			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
-			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
-			'no-undef': 'off'
-		}
-	},
-	{
-		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
-
-		languageOptions: {
-			parserOptions: {
-				projectService: true,
-				extraFileExtensions: ['.svelte'],
-				parser: ts.parser,
-				svelteConfig
-			}
-		}
-	}
+export default antfu(
+  {
+    type: 'app',
+    svelte: true,
+    formatters: true,
+    stylistic: {
+      indent: 2,
+      semi: true,
+      quotes: 'single'
+    },
+    gitignore: true
+  },
+  {
+    rules: {
+      'ts/no-redeclare': 'off',
+      'ts/consistent-type-definitions': ['error', 'type'],
+      'no-console': 'warn',
+      'node/prefer-global/process': 'off',
+      'node/no-process-env': 'error',
+      'perfectionist/sort-imports': [
+        'error',
+        {
+          tsconfigRootDir: '.',
+          internalPattern: ['^\\$.*'],
+          groups: [
+            'type',
+            ['builtin', 'external'],
+            'internal-type',
+            'internal',
+            ['parent-type', 'sibling-type', 'index-type'],
+            ['parent', 'sibling', 'index'],
+            'object',
+            'side-effect',
+            'unknown'
+          ]
+        }
+      ],
+      'unicorn/filename-case': ['error', { case: 'kebabCase', ignore: ['README.md'] }]
+    }
+  },
+  prettier,
+  ...svelte.configs.prettier,
+  {
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node }
+    },
+    rules: {
+      'no-undef': 'off',
+      'prefer-const': 'off',
+      'svelte/block-lang': ['error', { script: 'ts' }],
+      'svelte/button-has-type': ['warn'],
+      'svelte/sort-attributes': ['warn'],
+      'svelte/prefer-const': ['warn', { excludedRunes: ['$props', '$derived'] }],
+      'svelte/html-self-closing': ['error'],
+      'svelte/no-target-blank': ['error'],
+      'svelte/no-top-level-browser-globals': ['error'],
+      'svelte/no-add-event-listener': ['error'],
+      'svelte/no-raw-special-elements': ['error']
+    }
+  },
+  {
+    files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        extraFileExtensions: ['.svelte'],
+        parser: ts.parser,
+        svelteConfig
+      }
+    }
+  }
 );
