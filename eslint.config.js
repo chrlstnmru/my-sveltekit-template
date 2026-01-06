@@ -20,6 +20,7 @@ export default antfu(
   },
   {
     rules: {
+      'antfu/if-newline': 'off',
       'ts/no-redeclare': 'off',
       'ts/consistent-type-definitions': ['error', 'type'],
       'no-console': 'warn',
