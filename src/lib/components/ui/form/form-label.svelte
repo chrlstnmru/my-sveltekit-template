@@ -1,0 +1,27 @@
+<script lang="ts">
+  import * as FormPrimitive from 'formsnap';
+
+  import type { WithoutChild } from '$lib/utils.js';
+
+  import { Label } from '$lib/components/ui/label/index.js';
+  import { cn } from '$lib/utils.js';
+
+  let {
+    ref = $bindable(null),
+    children,
+    class: className,
+    ...restProps
+  }: WithoutChild<FormPrimitive.LabelProps> = $props();
+</script>
+
+<FormPrimitive.Label {...restProps} bind:ref>
+  {#snippet child({ props })}
+    <Label
+      {...props}
+      class={cn('data-[fs-error]:text-destructive', className)}
+      data-slot="form-label"
+    >
+      {@render children?.()}
+    </Label>
+  {/snippet}
+</FormPrimitive.Label>
