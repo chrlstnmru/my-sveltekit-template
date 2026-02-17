@@ -10,11 +10,15 @@
     ref = $bindable(null),
     class: className,
     children,
-    errors,
+    errors: errorList,
+    limit = 1,
+    showBullets,
     ...restProps
   }: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
     children?: Snippet;
     errors?: { message?: string }[];
+    limit?: number;
+    showBullets?: boolean;
   } = $props();
 
   const hasContent = $derived.by(() => {
@@ -22,18 +26,21 @@
     if (children) return true;
 
     // no errors
-    if (!errors) return false;
+    if (!errorList) return false;
 
     // has an error but no message
-    if (errors.length === 1 && !errors[0]?.message) {
+    if (errorList.length === 1 && !errorList[0]?.message) {
       return false;
     }
 
     return true;
   });
 
-  const isMultipleErrors = $derived(errors && errors.length > 1);
-  const singleErrorMessage = $derived(errors && errors.length === 1 && errors[0]?.message);
+  const errors = $derived.by(() => {
+    if (!errorList) return [];
+    if (limit && limit >= 0) return errorList.slice(0, limit);
+    return errorList;
+  });
 </script>
 
 {#if hasContent}
@@ -42,14 +49,14 @@
     class={cn('text-sm font-normal text-destructive', className)}
     data-slot="field-error"
     role="alert"
-    {...restProps}
-  >
+    {...restProps}>
     {#if children}
       {@render children()}
-    {:else if singleErrorMessage}
-      {singleErrorMessage}
-    {:else if isMultipleErrors}
-      <ul class="ms-4 flex list-disc flex-col gap-1">
+    {:else}
+      <ul
+        class={cn('flex  flex-col gap-1', {
+          'ms-4 list-disc': showBullets,
+        })}>
         {#each errors ?? [] as error, index (index)}
           {#if error?.message}
             <li>{error.message}</li>

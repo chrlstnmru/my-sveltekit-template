@@ -14,15 +14,19 @@ const config = {
     adapter: adapter(),
 
     experimental: {
-      remoteFunctions: true
-    }
+      remoteFunctions: true,
+    },
+
+    alias: {
+      $services: './src/services',
+    },
   },
 
   compilerOptions: {
     experimental: {
-      async: true
-    }
-  }
+      async: true,
+    },
+  },
 };
 
 export default config;

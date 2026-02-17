@@ -15,7 +15,7 @@
 
 <div
   bind:this={ref}
-  class={cn('flex items-center px-6 [.border-t]:pt-6', className)}
+  class={cn('flex items-center px-6 pb-6 [.border-t]:pt-6', className)}
   data-slot="card-footer"
   {...restProps}
 >

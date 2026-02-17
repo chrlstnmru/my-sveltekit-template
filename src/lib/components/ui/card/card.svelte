@@ -17,6 +17,8 @@
   bind:this={ref}
   class={cn(
     'flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm',
+    'has-[*>[data-slot="card-header"]]:pt-0',
+    'has-[*>[data-slot="card-footer"]]:pb-0',
     className
   )}
   data-slot="card"

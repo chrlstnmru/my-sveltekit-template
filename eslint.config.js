@@ -14,9 +14,9 @@ export default antfu(
     stylistic: {
       indent: 2,
       semi: true,
-      quotes: 'single'
+      quotes: 'single',
     },
-    gitignore: true
+    gitignore: true,
   },
   {
     rules: {
@@ -40,18 +40,18 @@ export default antfu(
             ['parent', 'sibling', 'index'],
             'object',
             'side-effect',
-            'unknown'
-          ]
-        }
+            'unknown',
+          ],
+        },
       ],
-      'unicorn/filename-case': ['error', { case: 'kebabCase', ignore: ['README.md'] }]
-    }
+      'unicorn/filename-case': ['error', { case: 'kebabCase', ignore: ['README.md'] }],
+    },
   },
   prettier,
   ...svelte.configs.prettier,
   {
     languageOptions: {
-      globals: { ...globals.browser, ...globals.node }
+      globals: { ...globals.browser, ...globals.node },
     },
     rules: {
       'no-undef': 'off',
@@ -64,8 +64,8 @@ export default antfu(
       'svelte/no-target-blank': ['error'],
       'svelte/no-top-level-browser-globals': ['error'],
       'svelte/no-add-event-listener': ['error'],
-      'svelte/no-raw-special-elements': ['error']
-    }
+      'svelte/no-raw-special-elements': ['error'],
+    },
   },
   {
     files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
@@ -74,8 +74,8 @@ export default antfu(
         projectService: true,
         extraFileExtensions: ['.svelte'],
         parser: ts.parser,
-        svelteConfig
-      }
-    }
+        svelteConfig,
+      },
+    },
   }
 );

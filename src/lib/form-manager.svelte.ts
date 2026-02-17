@@ -21,7 +21,7 @@ type FormManagerOptions<Input, Output> = {
 export class FormManager<
   F extends RemoteForm<any, Output>,
   Input = InferRemoteFormInput<F>,
-  Output = InferRemoteFormOutput<F>
+  Output = InferRemoteFormOutput<F>,
 > {
   #remoteForm: F;
   #opts: Required<FormManagerOptions<Input, Output>>;
@@ -33,6 +33,10 @@ export class FormManager<
       this.#opts.schema && this.#opts.usePreflight
         ? (remoteForm.preflight(this.#opts.schema) as F)
         : remoteForm;
+
+    if (this.#opts.usePreflight && !this.#opts.schema) {
+      throw new Error('Schema is required when using preflight');
+    }
 
     // Bind methods to preserve context
     this.getFieldProps = this.getFieldProps.bind(this);
@@ -104,7 +108,7 @@ export class FormManager<
         if (shouldValidate('onchange')) {
           form.validate({ preflightOnly: usePreflight });
         }
-      }
+      },
     } as const;
 
     // Map strategies to corresponding DOM events
@@ -113,7 +117,7 @@ export class FormManager<
       onblur: ['blur'],
       oninput: ['input'],
       onchange: ['change'],
-      onsubmit: []
+      onsubmit: [],
     };
 
     const events = strategyEvents[validationStrategy];
@@ -194,7 +198,7 @@ export class FormManager<
    */
   validate(preflightOnly?: boolean) {
     this.#remoteForm.validate({
-      preflightOnly: preflightOnly ?? this.#opts.usePreflight
+      preflightOnly: preflightOnly ?? this.#opts.usePreflight,
     });
   }
 
@@ -217,14 +221,14 @@ export class FormManager<
       validationStrategy: 'auto',
       schema: undefined as any,
       onsuccess: undefined as any,
-      onfailure: undefined as any
+      onfailure: undefined as any,
     };
 
     if (!opts) return defaults;
 
     return {
       ...defaults,
-      ...Object.fromEntries(Object.entries(opts).filter(([, v]) => v !== undefined))
+      ...Object.fromEntries(Object.entries(opts).filter(([, v]) => v !== undefined)),
     } as Required<FormManagerOptions<Input, Output>>;
   }
 }
