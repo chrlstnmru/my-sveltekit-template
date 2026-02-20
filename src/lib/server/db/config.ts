@@ -4,9 +4,12 @@ import type { Sql } from 'postgres';
 import { relations } from './relations';
 import * as schema from './schema';
 
+type Schema = typeof schema;
+type Relations = typeof relations;
+
 export function createDrizzleConfig<TClient extends Sql>(
   client: TClient
-): DrizzleConfig<Record<string, unknown>> & { client: TClient } {
+): DrizzleConfig<Schema, Relations> & { client: TClient } {
   return {
     client,
     schema,
