@@ -1,0 +1,50 @@
+import * as v from 'valibot';
+
+export const Slug = v.pipe(
+  v.string('Slug is required'),
+  v.trim(),
+  v.nonEmpty('Slug is required'),
+  v.regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    'Slug must contain only lowercase letters, numbers, and dashes'
+  ),
+  v.minLength(3, 'Slug must be at least 3 characters long'),
+  v.maxLength(64, 'Slug must be at most 64 characters long')
+);
+
+export const Password = v.pipe(
+  v.string('Password is required'),
+  v.trim(),
+  v.nonEmpty('Password is required'),
+  v.regex(/[a-z]/, 'Password must contain at least one lowercase letter'),
+  v.regex(/[A-Z]/, 'Password must contain at least one uppercase letter'),
+  v.regex(/\d/, 'Password must contain at least one digit'),
+  v.regex(/[^a-z\d]/i, 'Password must contain at least one special character'),
+  v.minLength(8, 'Password must be at least 8 characters long'),
+  v.maxLength(254, 'Password must be at most 254 characters long')
+);
+
+export const SetupSchema = v.object({
+  orgName: v.pipe(
+    v.string('Organization name is required'),
+    v.trim(),
+    v.nonEmpty('Organization name is required'),
+    v.minLength(3, 'Organization name must be at least 3 characters long'),
+    v.maxLength(128, 'Organization name must be at most 128 characters long')
+  ),
+  orgSlug: Slug,
+  name: v.pipe(
+    v.string('Name is required'),
+    v.trim(),
+    v.nonEmpty('Name is required'),
+    v.minLength(3, 'Name must be at least 3 characters long'),
+    v.maxLength(128, 'Name must be at most 128 characters long')
+  ),
+  email: v.pipe(
+    v.string('Email is required'),
+    v.trim(),
+    v.nonEmpty('Email is required'),
+    v.email()
+  ),
+  password: Password,
+});
