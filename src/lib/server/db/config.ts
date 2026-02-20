@@ -11,6 +11,6 @@ export function createDrizzleConfig<TClient extends Sql>(
     client,
     schema,
     relations,
-    casing: 'snake_case',
+    casing: 'snake_case'
   };
 }

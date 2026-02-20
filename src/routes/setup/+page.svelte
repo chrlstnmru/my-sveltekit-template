@@ -16,7 +16,7 @@
 
   const form = new FormManager(remoteSetupForm, {
     schema: SetupSchema,
-    usePreflight: true,
+    usePreflight: true
   });
   const generateSlug = () => {
     const name = form.getFieldValue('orgName');
@@ -58,7 +58,8 @@
                 <InputGroup.Input
                   class="lowercase"
                   placeholder="my-organization"
-                  {...form.getFieldProps('orgSlug', 'text')} />
+                  {...form.getFieldProps('orgSlug', 'text')}
+                />
                 <InputGroup.Addon align="inline-end">
                   <Tooltip.Root>
                     <Tooltip.Trigger>
@@ -95,14 +96,16 @@
               <InputGroup.Root>
                 <InputGroup.Input
                   placeholder="••••••••••••••••"
-                  {...form.getFieldProps('password', passwordType)} />
+                  {...form.getFieldProps('password', passwordType)}
+                />
                 <InputGroup.Addon align="inline-end">
                   <Tooltip.Root>
                     <Tooltip.Trigger>
                       {#snippet child({ props })}
                         <InputGroup.Button
                           {...props}
-                          onclick={() => (showPassword = !showPassword)}>
+                          onclick={() => (showPassword = !showPassword)}
+                        >
                           {#if showPassword}
                             <EyeIcon />
                           {:else}

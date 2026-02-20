@@ -5,7 +5,7 @@ import type {
   MFAPolicyConfig,
   OAuthPolicyConfig,
   PasswordPolicyConfig,
-  SessionPolicyConfig,
+  SessionPolicyConfig
 } from '$lib/server/db/types';
 
 import type { sharedPermissionScope } from './server/db/schema';
@@ -16,7 +16,7 @@ export const DEFAULT_SESSION_POLICY_CONFIG: SessionPolicyConfig = {
   sessionAbsoluteTimeoutMinutes: 28800, // 8 hours
   enableRememberMe: false,
   rememberMeAbsoluteTimeoutDays: 30,
-  sessionExpiryWarningMinutes: 10,
+  sessionExpiryWarningMinutes: 10
 };
 
 export const DEFAULT_PASSOWRD_POLICY_CONFIG: PasswordPolicyConfig = {
@@ -25,26 +25,26 @@ export const DEFAULT_PASSOWRD_POLICY_CONFIG: PasswordPolicyConfig = {
     uppercase: true,
     lowercase: true,
     numbers: true,
-    symbols: true,
+    symbols: true
   },
-  preventPasswordReuse: 5,
+  preventPasswordReuse: 5
 };
 
 export const DEFAULT_MFA_POLICY_CONFIG: MFAPolicyConfig = {
   required: false,
   allowBackupCodes: true,
-  allowedMethods: ['totp'],
+  allowedMethods: ['totp']
 };
 
 export const DEFAULT_OAUTH_POLICY_CONFIG: OAuthPolicyConfig = {
   allowedProviders: [],
-  autoLinkEmail: false,
+  autoLinkEmail: false
 };
 
 export const DEFAULT_LOCKOUT_POLICY_CONFIG: LockoutPolicyConfig = {
   maxFailedAttempts: 5,
   failedAttemptsTimeoutMinutes: 5,
-  lockoutTimeoutMinutes: -1, // Permanent lockout
+  lockoutTimeoutMinutes: -1 // Permanent lockout
 };
 
 export const PERMISSIONS = [
@@ -61,7 +61,7 @@ export const PERMISSIONS = [
   { key: 'hr.employee.update.request', name: 'Request Employee Update' },
   { key: 'hr.employee.update.approve', name: 'Update Employee' },
   { key: 'hr.employee.update.reject', name: 'Reject Employee Update' },
-  { key: 'hr.employee.delete', name: 'Delete Employee' },
+  { key: 'hr.employee.delete', name: 'Delete Employee' }
 ] as const;
 
 type PermissionKey = (typeof PERMISSIONS)[number]['key'];
@@ -88,7 +88,7 @@ export const BUILTIN_ROLES: Role[] = [
     permissions: ['*'],
     scope: 'organization',
     isAssignable: false,
-    isRemovable: false,
+    isRemovable: false
   },
   {
     name: 'Employee',
@@ -96,6 +96,6 @@ export const BUILTIN_ROLES: Role[] = [
     permissions: ['auth.user.view', 'hr.employee.update.request'],
     scope: 'self',
     isAssignable: false,
-    isRemovable: false,
-  },
+    isRemovable: false
+  }
 ];

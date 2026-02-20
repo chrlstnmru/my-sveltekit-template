@@ -10,5 +10,5 @@ export default defineConfig({
   schemaFilter: ['shared', 'system'],
   casing: 'snake_case',
   verbose: true,
-  strict: true,
+  strict: true
 });

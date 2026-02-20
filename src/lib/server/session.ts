@@ -46,14 +46,14 @@ export async function createSession(
     refreshToken: hashToken(refreshToken),
     accessTokenExpiresAt,
     refreshTokenExpiresAt,
-    lastActivityAt: now,
+    lastActivityAt: now
   });
 
   return {
     accessToken,
     refreshToken,
     accessTokenExpiresAt,
-    refreshTokenExpiresAt,
+    refreshTokenExpiresAt
   };
 }
 

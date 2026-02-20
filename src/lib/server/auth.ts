@@ -26,11 +26,11 @@ export async function login(
 ): Promise<LoginResult> {
   const org = await db.query.systemOrganizationsTable.findFirst({
     where: {
-      AND: [{ slug: { eq: organizationSlug } }, { deletedAt: { isNull: true } }],
+      AND: [{ slug: { eq: organizationSlug } }, { deletedAt: { isNull: true } }]
     },
     with: {
-      config: true,
-    },
+      config: true
+    }
   });
 
   if (!org) throw new AuthError('ORG_NOT_FOUND', 'Organization not fount');
@@ -40,9 +40,9 @@ export async function login(
       AND: [
         { organizationId: { eq: org.id } },
         { email: { eq: email } },
-        { deletedAt: { isNull: true } },
-      ],
-    },
+        { deletedAt: { isNull: true } }
+      ]
+    }
   });
 
   if (!user || !user.password) {

@@ -6,7 +6,7 @@ import type {
   sharedPermissionScope,
   systemBranchesTable,
   systemOrganizationsTable,
-  systemUsersTable,
+  systemUsersTable
 } from './schema';
 
 export type RoleScope = InferEnum<typeof sharedPermissionScope>;

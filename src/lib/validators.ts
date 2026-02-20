@@ -46,5 +46,5 @@ export const SetupSchema = v.object({
     v.nonEmpty('Email is required'),
     v.email()
   ),
-  password: Password,
+  password: Password
 });

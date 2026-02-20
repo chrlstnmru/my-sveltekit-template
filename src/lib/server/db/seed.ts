@@ -1,3 +1,6 @@
+/* eslint-disable no-console */
+/* eslint-disable node/no-process-env */
+
 import { DrizzleQueryError } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { exit } from 'node:process';
@@ -41,7 +44,7 @@ async function main() {
         .insert(sharedPermissionsTable)
         .values({
           key: permission.key,
-          name: permission.name,
+          name: permission.name
         })
         .onConflictDoNothing();
     }

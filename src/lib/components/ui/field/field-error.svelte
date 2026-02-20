@@ -49,14 +49,16 @@
     class={cn('text-sm font-normal text-destructive', className)}
     data-slot="field-error"
     role="alert"
-    {...restProps}>
+    {...restProps}
+  >
     {#if children}
       {@render children()}
     {:else}
       <ul
         class={cn('flex  flex-col gap-1', {
-          'ms-4 list-disc': showBullets,
-        })}>
+          'ms-4 list-disc': showBullets
+        })}
+      >
         {#each errors ?? [] as error, index (index)}
           {#if error?.message}
             <li>{error.message}</li>
