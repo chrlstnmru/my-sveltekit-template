@@ -1,7 +1,8 @@
 import { and, isNotNull, isNull } from "drizzle-orm";
-import { index, inet, text, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, inet, integer, text, uniqueIndex } from "drizzle-orm/pg-core";
 
 import { createSystemTable, timestamptz, uuidv7 } from "../helpers";
+import { sharedMFAMethods, sharedRevokeReasons } from "../shared/enums";
 import { systemOrganizationsTable } from "./organizations";
 
 export const systemUsersTable = createSystemTable('users', {
@@ -11,6 +12,8 @@ export const systemUsersTable = createSystemTable('users', {
   username: text(),
   password: text(),
   displayName: text(),
+  failedLoginAttempts: integer().notNull().default(0),
+  lockedUntil: timestamptz(),
   createdAt: timestamptz().defaultNow(),
   updatedAt: timestamptz({ update: true }).defaultNow(),
   deletedAt: timestamptz(),
@@ -38,6 +41,7 @@ export const systemUserSessionsTable = createSystemTable('user_sessions', {
   refreshToken: text().notNull().unique(),
   refreshTokenExpiresAt: timestamptz().notNull(),
   lastActivityAt: timestamptz().defaultNow(),
+  revokeReason: sharedRevokeReasons(),
   createdAt: timestamptz().defaultNow(),
   updatedAt: timestamptz({ update: true }).defaultNow(),
   revokedAt: timestamptz(),
@@ -45,4 +49,44 @@ export const systemUserSessionsTable = createSystemTable('user_sessions', {
   index().on(t.userId, t.revokedAt),
   index().on(t.accessToken).where(isNull(t.revokedAt)),
   index().on(t.refreshToken).where(isNull(t.revokedAt)),
+]);
+
+export const systemUserMfaTable = createSystemTable('user_mfa', {
+  id: uuidv7().notNull().primaryKey(),
+  userId: uuidv7({ withDefault: false }).notNull().references(() => systemUsersTable.id, { onDelete: 'cascade' }).unique(),
+  method: sharedMFAMethods().notNull(),
+  secret: text(),
+  emailVerified: boolean().notNull().default(false),
+  enabled: boolean().notNull().default(false),
+  verifiedAt: timestamptz(),
+  createdAt: timestamptz().defaultNow(),
+  updatedAt: timestamptz({ update: true }).defaultNow(),
+}, (t) => [
+  index().on(t.userId),
+]);
+
+export const systemUserMfaBackupCodesTable = createSystemTable('user_mfa_backup_codes', {
+  id: uuidv7().notNull().primaryKey(),
+  mfaId: uuidv7({ withDefault: false }).notNull().references(() => systemUserMfaTable.id, { onDelete: 'cascade' }),
+  codeHash: text().notNull(),
+  usedAt: timestamptz(),
+  createdAt: timestamptz().defaultNow(),
+}, (t) => [
+  index().on(t.mfaId),
+]);
+
+export const systemUserMfaChallengesTable = createSystemTable('user_mfa_challenges', {
+  id: uuidv7().notNull().primaryKey(),
+  userId: uuidv7({ withDefault: false }).notNull().references(() => systemUsersTable.id, { onDelete: 'cascade' }),
+  sessionId: uuidv7({ withDefault: false }).references(() => systemUserSessionsTable.id, { onDelete: 'cascade' }),
+  method: sharedMFAMethods().notNull(),
+  code: text(),
+  codeHash: text(),
+  attempts: integer().notNull().default(0),
+  verifiedAt: timestamptz(),
+  expiresAt: timestamptz().notNull(),
+  createdAt: timestamptz().defaultNow(),
+}, (t) => [
+  index().on(t.userId),
+  index().on(t.sessionId),
 ]);

@@ -24,6 +24,27 @@ export const Password = v.pipe(
   v.maxLength(254, 'Password must be at most 254 characters long')
 );
 
+export const LoginSchema = v.object({
+  email: v.pipe(
+    v.string('Email is required'),
+    v.trim(),
+    v.nonEmpty('Email is required'),
+    v.email('Invalid email address')
+  ),
+  password: v.pipe(v.string('Password is required'), v.nonEmpty('Password is required')),
+  rememberMe: v.optional(v.boolean(), false)
+});
+
+export const MfaVerifySchema = v.object({
+  challengeId: v.string(),
+  code: v.pipe(
+    v.string('Code is required'),
+    v.trim(),
+    v.nonEmpty('Code is required'),
+    v.length(6, 'Code must be 6 digits')
+  )
+});
+
 export const SetupSchema = v.object({
   orgName: v.pipe(
     v.string('Organization name is required'),

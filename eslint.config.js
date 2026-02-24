@@ -44,7 +44,24 @@ export default antfu(
           ]
         }
       ],
-      'unicorn/filename-case': ['error', { case: 'kebabCase', ignore: ['README.md'] }]
+      'unicorn/filename-case': ['error', { case: 'kebabCase', ignore: ['README.md'] }],
+      'antfu/no-top-level-await': 'off',
+      'unused-imports/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }
+      ],
+      'ts/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }
+      ]
     }
   },
   prettier,

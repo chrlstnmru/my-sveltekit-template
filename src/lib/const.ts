@@ -48,6 +48,8 @@ export const DEFAULT_LOCKOUT_POLICY_CONFIG: LockoutPolicyConfig = {
 };
 
 export const PERMISSIONS = [
+  { key: '*', name: 'Root' },
+
   { key: 'auth.user.create', name: 'Create User' },
   { key: 'auth.user.list', name: 'List All Users' },
   { key: 'auth.user.view', name: 'View User' },

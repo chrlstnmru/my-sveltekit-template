@@ -18,6 +18,7 @@ const config = {
     },
 
     alias: {
+      $routes: './src/routes',
       $services: './src/services'
     }
   },
