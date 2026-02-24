@@ -34,8 +34,11 @@ export type FormOptions<Input, Output> = {
   clearOnSubmit?: boolean;
   validationStrategy?: ValidationStrategy;
   usePreflight?: boolean;
-  onsuccess?: (data: Output) => void;
-  onfailure?: (error: unknown) => void;
+  onsuccess?: (data: Output, formManager: FormManager<RemoteForm<any, Output>>) => void;
+  onfailure?: (
+    error: FormValidationError | unknown,
+    formManager: FormManager<RemoteForm<any, Output>>
+  ) => void;
 };
 
 export class FormManager<
@@ -79,9 +82,9 @@ export class FormManager<
           throw new FormValidationError(errors);
         }
 
-        this.options.onsuccess?.(data);
+        this.options.onsuccess?.(data, this);
       } catch (e) {
-        this.options.onfailure?.(e);
+        this.options.onfailure?.(e, this);
       } finally {
         this.loading = false;
       }
@@ -155,6 +158,11 @@ export class FormManager<
 
   getFieldIssues<P extends FieldPath<Input>>(field: P): RemoteFormIssue[] {
     const directField = this.remoteForm.fields[field as keyof Input & string];
+
+    if (this.loading) {
+      return [];
+    }
+
     if (directField) {
       return directField.issues() ?? [];
     }
@@ -167,7 +175,7 @@ export class FormManager<
   }
 
   hasFieldIssues<P extends FieldPath<Input>>(field: P): boolean {
-    return this.getFieldIssues(field).length > 0;
+    return !this.loading ? this.getFieldIssues(field).length > 0 : false;
   }
 
   getFieldValue<P extends FieldPath<Input>>(field: P, useUntracked = false): PathValue<Input, P> {
