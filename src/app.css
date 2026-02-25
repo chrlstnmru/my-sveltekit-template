@@ -172,6 +172,10 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  button {
+    @apply hover:cursor-pointer;
+  }
 }
 
 @layer components {
@@ -185,5 +189,23 @@
   &::after {
     content: '*';
     @apply font-light text-red-400;
+  }
+}
+
+@utility spinner-none {
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    -moz-appearance: textfield;
+    appearance: none;
+    margin: 0;
+  }
+}
+
+@utility spinner-auto {
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    -moz-appearance: auto;
+    appearance: auto;
+    margin: initial;
   }
 }

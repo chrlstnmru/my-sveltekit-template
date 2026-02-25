@@ -1,26 +1,15 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
-import type { RemoteForm, RemoteFormFieldType, RemoteFormIssue } from '@sveltejs/kit';
+import type {
+  RemoteForm,
+  RemoteFormFieldType,
+  RemoteFormInput,
+  RemoteFormIssue
+} from '@sveltejs/kit';
 
 import { untrack } from 'svelte';
 import { on } from 'svelte/events';
 
-type Path<T> = T extends object
-  ? {
-      [K in keyof T]: K extends string
-        ? T[K] extends object
-          ? K | `${K}.${Path<T[K]>}`
-          : K
-        : never;
-    }[keyof T]
-  : never;
-
-export type PathValue<T, P extends string> = P extends `${infer K}.${infer Rest}`
-  ? K extends keyof T
-    ? PathValue<T[K], Rest>
-    : never
-  : P extends keyof T
-    ? T[P]
-    : never;
+import type { Path, PathValue } from '$lib/utils';
 
 export type FieldPath<T> = (keyof T & string) | Path<T>;
 
@@ -29,12 +18,12 @@ export type InferRemoteFormOutput<T> = T extends RemoteForm<any, infer Output> ?
 
 type ValidationStrategy = 'auto' | 'onblur' | 'oninput' | 'onchange' | 'onsubmit';
 
-export type FormOptions<Input, Output> = {
+export type FormOptions<Input extends RemoteFormInput, Output> = {
   schema?: StandardSchemaV1<Input>;
   clearOnSubmit?: boolean;
   validationStrategy?: ValidationStrategy;
   usePreflight?: boolean;
-  onsuccess?: (data: Output, formManager: FormManager<RemoteForm<any, Output>>) => void;
+  onsuccess?: (data: Output, formManager: FormManager<RemoteForm<Input, Output>>) => void;
   onfailure?: (
     error: FormValidationError | unknown,
     formManager: FormManager<RemoteForm<any, Output>>
@@ -42,8 +31,8 @@ export type FormOptions<Input, Output> = {
 };
 
 export class FormManager<
-  F extends RemoteForm<any, Output>,
-  Input = InferRemoteFormInput<F>,
+  F extends RemoteForm<any, any>,
+  Input extends RemoteFormInput = InferRemoteFormInput<F>,
   Output = InferRemoteFormOutput<F>
 > {
   private remoteForm: F;
@@ -146,32 +135,20 @@ export class FormManager<
     };
   }
 
-  getFieldProps<K extends keyof Input & string, T extends RemoteFormFieldType<Input[K]>>(
-    field: K,
+  getFieldProps<P extends FieldPath<Input>, T extends RemoteFormFieldType<PathValue<Input, P>>>(
+    field: P,
     type: T
   ) {
-    const inputField = this.remoteForm.fields[field];
     // @ts-expect-error Svelte
-    const props = $derived(inputField.as<T>(type));
-    return { ...props, 'aria-invalid': this.hasFieldIssues(field) };
+    return this.getField(field).as<T>(type);
   }
 
   getFieldIssues<P extends FieldPath<Input>>(field: P): RemoteFormIssue[] {
-    const directField = this.remoteForm.fields[field as keyof Input & string];
-
     if (this.loading) {
       return [];
     }
 
-    if (directField) {
-      return directField.issues() ?? [];
-    }
-
-    if (field.includes('.')) {
-      return this.getNestedIssues(field);
-    }
-
-    return [];
+    return this.getField(field).issues() ?? [];
   }
 
   hasFieldIssues<P extends FieldPath<Input>>(field: P): boolean {
@@ -179,21 +156,12 @@ export class FormManager<
   }
 
   getFieldValue<P extends FieldPath<Input>>(field: P, useUntracked = false): PathValue<Input, P> {
-    if (!field.includes('.')) {
-      const value = this.remoteForm.fields[field as keyof Input & string].value;
-      return (useUntracked ? untrack(value) : value()) as PathValue<Input, P>;
-    }
-
-    return this.getNestedValue(field, useUntracked) as PathValue<Input, P>;
+    const value = this.getField(field).value;
+    return (useUntracked ? untrack(value) : value()) as PathValue<Input, P>;
   }
 
   setFieldValue<P extends FieldPath<Input>>(field: P, value: PathValue<Input, P>): void {
-    if (!field.includes('.')) {
-      this.remoteForm.fields[field as keyof Input & string].set(value);
-      return;
-    }
-
-    this.setNestedValue(field, value);
+    this.getField(field).set(value);
   }
 
   validate(preflightOnly?: boolean) {
@@ -224,50 +192,33 @@ export class FormManager<
     this.validate = this.validate.bind(this);
   }
 
-  private getNestedIssues(dotPath: string): RemoteFormIssue[] {
-    const allIssues = this.remoteForm.fields.allIssues() ?? [];
-    return allIssues.filter((issue) => issue.path?.join('.') === dotPath);
-  }
+  private getField<P extends FieldPath<Input>>(field: P) {
+    const parts = field.split('.') as (keyof Input & string)[];
 
-  private getNestedValue(dotPath: string, useUntracked = false): unknown {
-    const [head, ...tail] = dotPath.split('.');
-    let current: unknown = this.getFieldValue(head as keyof Input & string, useUntracked);
+    if (parts.length === 1) {
+      const currentField = this.remoteForm.fields[field as keyof Input & string];
+      if (!currentField) {
+        throw new Error(`Field "${field}" not found for path "${field}"`);
+      }
+      return currentField;
+    }
+
+    const [head, ...tail] = parts;
+    let currentField = this.remoteForm.fields[head];
+
+    if (!currentField) {
+      throw new Error(`Field "${head}" not found for path "${field}"`);
+    }
 
     for (const key of tail) {
-      if (current === null || typeof current !== 'object') return undefined;
-      current = (current as Record<string, unknown>)[key];
+      currentField = currentField[key];
+
+      if (!currentField) {
+        throw new Error(`Field "${key}" not found for path "${field}"`);
+      }
     }
 
-    return current;
-  }
-
-  private setNestedValue(dotPath: string, value: unknown): void {
-    const [parentKey, ...childPath] = dotPath.split('.');
-    const parent = this.getFieldValue(parentKey as keyof Input & string, true);
-
-    if (parent === null || typeof parent !== 'object') {
-      throw new Error(`Cannot set nested property on non-object field: ${parentKey}`);
-    }
-
-    const updated = this.deepSet(parent as Record<string, unknown>, childPath, value);
-    this.setFieldValue(parentKey as keyof Input & string, updated as any);
-  }
-
-  private deepSet(
-    obj: Record<string, unknown>,
-    path: string[],
-    value: unknown
-  ): Record<string, unknown> {
-    const [head, ...tail] = path;
-
-    if (tail.length === 0) {
-      return { ...obj, [head]: value };
-    }
-
-    return {
-      ...obj,
-      [head]: this.deepSet((obj[head] as Record<string, unknown>) ?? {}, tail, value)
-    };
+    return currentField;
   }
 
   private mergeDefaults(
