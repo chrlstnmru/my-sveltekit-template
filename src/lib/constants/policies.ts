@@ -2,7 +2,6 @@ import type {
   LockoutPolicyConfig,
   MFAPolicyConfig,
   OAuthPolicyConfig,
-  PasswordPolicyConfig,
   SessionPolicyConfig
 } from '$lib/server/db/types';
 
@@ -12,17 +11,6 @@ export const DEFAULT_SESSION_POLICY_CONFIG: SessionPolicyConfig = {
   sessionAbsoluteTimeoutMinutes: 28800, // 8 hours
   rememberMeAbsoluteTimeoutDays: 30,
   sessionExpiryWarningMinutes: 10
-};
-
-export const DEFAULT_PASSOWRD_POLICY_CONFIG: PasswordPolicyConfig = {
-  minLength: 8,
-  requirements: {
-    uppercase: true,
-    lowercase: true,
-    numbers: true,
-    symbols: true
-  },
-  preventPasswordReuse: 5
 };
 
 export const DEFAULT_MFA_POLICY_CONFIG: MFAPolicyConfig = {

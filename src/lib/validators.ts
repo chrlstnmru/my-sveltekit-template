@@ -95,35 +95,10 @@ export const SetupSchema = v.object({
   password: Password
 });
 
-export const PasswordPolicySchema = v.object({
-  requirements: v.optional(
-    v.object({
-      uppercase: v.optional(Booleanish),
-      lowercase: v.optional(Booleanish),
-      numbers: v.optional(Booleanish),
-      symbols: v.optional(Booleanish)
-    })
-  ),
-  minLength: v.pipe(Numeric, v.gtValue(7, 'Minimum length cannot be less than 8')),
-  preventPasswordReuse: v.pipe(Numeric, v.gtValue(-1, 'Invalid value'))
-});
-
 export const SessionPolicySchema = v.object({
   maxConcurrentSessions: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
   idleTimeoutMinutes: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
   sessionTimeoutMinutes: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
   rememberMeAbsoluteTimeoutDays: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
   sessionExpiryWarningMinutes: v.pipe(Numeric, v.gtValue(-1, 'Invalid value'))
-});
-
-export const NestedTest = v.object({
-  test: v.object({
-    switch: v.boolean(),
-    test: v.object({
-      name: v.pipe(v.string(), v.trim(), v.nonEmpty('Name is required'))
-    })
-  }),
-  test2: v.object({
-    switch: v.optional(v.boolean())
-  })
 });

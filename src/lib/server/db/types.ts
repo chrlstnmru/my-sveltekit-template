@@ -26,18 +26,6 @@ export type SessionPolicyConfig = {
   sessionExpiryWarningMinutes: number;
 };
 
-export type PasswordPolicyConfig = {
-  minLength: number;
-  requirements: {
-    uppercase?: boolean;
-    lowercase?: boolean;
-    numbers?: boolean;
-    symbols?: boolean;
-  };
-  maxPasswordAgeDays?: number | null;
-  preventPasswordReuse: number;
-};
-
 export type MFAPolicyConfig = {
   required: boolean;
   allowedMethods: MFAMethod[];
