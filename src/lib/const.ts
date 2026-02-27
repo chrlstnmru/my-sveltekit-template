@@ -14,7 +14,6 @@ export const DEFAULT_SESSION_POLICY_CONFIG: SessionPolicyConfig = {
   maxConcurrentSessions: 1,
   sessionIdleTimeoutMinutes: 15,
   sessionAbsoluteTimeoutMinutes: 28800, // 8 hours
-  enableRememberMe: false,
   rememberMeAbsoluteTimeoutDays: 30,
   sessionExpiryWarningMinutes: 10
 };

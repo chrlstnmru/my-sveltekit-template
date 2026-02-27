@@ -1,7 +1,9 @@
 import { and, eq, isNull } from 'drizzle-orm';
 
+import type { systemEmployeesTable } from '$lib/server/db/schema';
 import type { RevokeReason, SessionPolicyConfig } from '$lib/server/db/types';
 
+import { DEFAULT_SESSION_POLICY_CONFIG } from '$lib/const';
 import { db } from '$lib/server/db';
 import {
   systemUserMfaBackupCodesTable,
@@ -21,8 +23,11 @@ import {
   verifyToken
 } from './crypto';
 
-type User = typeof systemUsersTable.$inferSelect;
-type Session = typeof systemUserSessionsTable.$inferSelect;
+type UserExtraInfo = Pick<typeof systemEmployeesTable.$inferSelect, 'firstName' | 'lastName'>;
+export type User = Omit<typeof systemUsersTable.$inferSelect, 'password'> & {
+  employeeData?: UserExtraInfo | null;
+};
+export type Session = typeof systemUserSessionsTable.$inferSelect;
 
 type RefreshTokensSuccess = {
   success: true;
@@ -63,15 +68,8 @@ export class AuthService {
 
   private getSessionPolicy = async (organizationId: string): Promise<SessionPolicyConfig> => {
     const settings = await this.getOrganizationSettings(organizationId);
-    if (!settings?.enableSessionPolicy || !settings.sessionPolicyConfig) {
-      return {
-        maxConcurrentSessions: 1,
-        sessionIdleTimeoutMinutes: 15,
-        sessionAbsoluteTimeoutMinutes: 28800,
-        enableRememberMe: false,
-        rememberMeAbsoluteTimeoutDays: 30,
-        sessionExpiryWarningMinutes: 10
-      };
+    if (!settings?.sessionPolicyConfig) {
+      return DEFAULT_SESSION_POLICY_CONFIG;
     }
     return settings.sessionPolicyConfig as SessionPolicyConfig;
   };
@@ -117,7 +115,7 @@ export class AuthService {
     );
 
     let refreshTokenExpiresAt: Date;
-    if (rememberMe && sessionPolicy.enableRememberMe) {
+    if (rememberMe) {
       refreshTokenExpiresAt = new Date(
         now.getTime() + sessionPolicy.rememberMeAbsoluteTimeoutDays * 24 * 60 * 60 * 1000
       );
@@ -194,15 +192,12 @@ export class AuthService {
     }
 
     const user = validation.user;
-    const settings = await this.getOrganizationSettings(user.organizationId);
 
-    const mfaEnabled =
-      settings?.enableMFAPolicy && (settings.mfaPolicyConfig as { required?: boolean })?.required;
     const userMfa = await db.query.systemUserMfaTable.findFirst({
       where: { userId: user.id }
     });
 
-    if (mfaEnabled && userMfa?.enabled) {
+    if (userMfa?.enabled) {
       const challengeCode = generateCode(6);
       const challengeCodeHash = hashToken(challengeCode);
 
@@ -304,7 +299,7 @@ export class AuthService {
 
     await db
       .update(systemUserSessionsTable)
-      .set({ revokedAt: new Date() })
+      .set({ revokedAt: new Date(), revokeReason: 'user_revoked' })
       .where(eq(systemUserSessionsTable.accessToken, accessTokenHash));
 
     return { success: true };
@@ -336,6 +331,17 @@ export class AuthService {
     }
 
     const user = await db.query.systemUsersTable.findFirst({
+      columns: {
+        password: false
+      },
+      with: {
+        employeeData: {
+          columns: {
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
       where: { id: session.userId }
     });
 

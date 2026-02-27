@@ -2,7 +2,7 @@
 <script lang="ts">
   import type { HTMLInputAttributes } from 'svelte/elements';
 
-  import { tick } from 'svelte';
+  import { onMount, tick } from 'svelte';
 
   import type { WithElementRef } from '$lib/utils';
 
@@ -32,7 +32,7 @@
   } & WithElementRef<
     Omit<HTMLInputAttributes, 'value' | 'oninput' | 'onchange' | 'onblur' | 'type' | 'files'>,
     HTMLInputElement
-  >;
+  > & { type?: never };
 
   let {
     ref = $bindable(null),
@@ -54,15 +54,19 @@
     fixedDecimalScale = false,
     class: className = '',
     updateStrategy = 'both',
-    formatOnMount = false,
     emptyAsZero = false,
     step = 1,
+    name,
+    type: _type,
+    disabled,
     ...rest
   }: Props = $props();
 
   let displayValue = $state('');
   let isFocused = $state(false);
   let isMounted = $state(false);
+
+  const isDisabled = $derived(!isMounted || disabled);
 
   // Determine separators based on locale if not explicitly provided
   const getSeparators = () => {
@@ -85,7 +89,7 @@
   const formatNumber = (number: number | null, forEditing = false): string => {
     let num = number;
 
-    if (num === null || num === undefined || Number.isNaN(num)) {
+    if (num === null || num === undefined || Number.isNaN(num) || String(num) === '') {
       if (emptyAsZero) num = 0;
       else return '';
     }
@@ -99,7 +103,7 @@
     const absNum = Math.abs(num);
 
     // Handle decimal scaling
-    let formatted = absNum.toFixed(decimalScale);
+    let formatted = decimalScale === 0 ? String(absNum) : absNum.toFixed(decimalScale);
 
     if (!fixedDecimalScale) {
       // Remove trailing zeros
@@ -164,16 +168,19 @@
 
     const finalNum = isNegative ? -num : num;
 
-    // Apply min/max constraints
-    if (finalNum < min) return min;
-    if (finalNum > max) return max;
-
     return finalNum;
   };
 
-  const updateValue = async (newValue: number | null) => {
+  const clampValue = (value: number) => Math.max(Math.min(value, max), min);
+
+  const updateValue = async (val: number | null) => {
+    const newValue = clampValue(parseValue(String(val)) ?? 0);
+    const newDisplayValue = isFocused ? String(newValue ?? '') : formatNumber(newValue);
+
+    if (newDisplayValue === displayValue) return; // No change
+
     value = newValue;
-    displayValue = isFocused ? String(newValue ?? '') : formatNumber(newValue);
+    displayValue = newDisplayValue;
 
     await tick();
 
@@ -186,18 +193,7 @@
 
   // Sync external value changes to display
   $effect(() => {
-    if (!isFocused) {
-      const newDisplay = formatNumber(value);
-
-      if (!isMounted) {
-        displayValue = formatOnMount ? newDisplay : '';
-        isMounted = true;
-      } else {
-        if (newDisplay !== displayValue) {
-          displayValue = newDisplay;
-        }
-      }
-    }
+    updateValue(value);
   });
 
   // Handle input with cursor preservation
@@ -243,15 +239,15 @@
   const handleInput = async (e: Event) => {
     const input = e.target as HTMLInputElement;
     const rawValue = input.value;
-    const selectionStart = input.selectionStart || 0;
+    // const selectionStart = input.selectionStart || 0;
 
     updateValue(parseValue(rawValue, false));
 
     // Smart cursor positioning
-    if (ref && document.activeElement === ref) {
-      const newCursor = Math.min(selectionStart, rawValue.length);
-      ref.setSelectionRange(newCursor, newCursor);
-    }
+    // if (ref && document.activeElement === ref) {
+    //   const newCursor = Math.min(selectionStart, rawValue.length);
+    //   ref.setSelectionRange(newCursor, newCursor);
+    // }
   };
 
   const handleBlur = async (e: FocusEvent) => {
@@ -280,7 +276,9 @@
 
     // Show unformatted value for editing
     if (value !== null && !Number.isNaN(value)) {
-      displayValue = String(value);
+      displayValue = String(parseValue(String(value)));
+    } else {
+      displayValue = emptyAsZero ? formatNumber(value) : String(value);
     }
   };
 
@@ -302,16 +300,16 @@
 
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      const currentValue = value ?? 0;
-      const newValue = Math.min(currentValue + parseValue(String(step))!, max);
+      const currentValue = parseValue(String(value)) ?? 0;
+      const newValue = Math.min(currentValue + step, max);
       updateValue(newValue);
       return;
     }
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      const currentValue = value ?? 0;
-      const newValue = Math.max(currentValue - parseValue(String(step))!, min);
+      const currentValue = parseValue(String(value)) ?? 0;
+      const newValue = Math.max(currentValue - step, min);
       updateValue(newValue);
       return;
     }
@@ -326,6 +324,12 @@
 
     // Allow: decimal separator
     if ((e.key === DECIMAL_SEP || e.key === '.') && allowDecimal) {
+      if (decimalScale === 0) {
+        console.warn('Decimal scale is set to 0, this will disable decimal separators');
+        e.preventDefault();
+        return;
+      }
+
       const input = e.target as HTMLInputElement;
       const val = input.value;
       if (!val.replace(prefix, '').replace(suffix, '').includes(DECIMAL_SEP)) {
@@ -350,10 +354,16 @@
       suffix = '%';
     }
   });
+
+  onMount(() => {
+    isMounted = true;
+  });
 </script>
 
 <Input
+  {name}
   class={className}
+  disabled={isDisabled}
   inputmode="decimal"
   onbeforeinput={handleBeforeInput}
   onblur={handleBlur}
@@ -366,4 +376,4 @@
   {...rest}
 />
 
-<input name={rest.name} type="hidden" {value} />
+<!-- <input {name} type="number" bind:value {...rest} tabindex="-1" /> -->

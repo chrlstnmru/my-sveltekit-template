@@ -78,7 +78,7 @@
           </RadioGroup>
         </div>
       {:else if step === 'setup'}
-        <form id="mfa-setup-form" {...setupForm.form} {@attach setupForm.enhance}>
+        <form {...setupForm.form} {@attach setupForm.enhance}>
           <input name="method" type="hidden" value={selectedMethod} />
           <div class="space-y-6">
             <div class="flex justify-center">
@@ -96,7 +96,7 @@
           </div>
         </form>
       {:else if step === 'verify'}
-        <form id="mfa-verify-form" {...verifyForm.form} {@attach verifyForm.enhance}>
+        <form {...verifyForm.form} {@attach verifyForm.enhance}>
           <Field.Set disabled={verifyForm.isLoading}>
             <Field.Group class="gap-4">
               {#if secret && selectedMethod === 'totp'}
@@ -152,7 +152,9 @@
             handleMethodSelect();
             step = 'setup';
           }}
->Continue</Button>
+        >
+          Continue
+        </Button>
       {:else if step === 'setup'}
         <Button onclick={() => (step = 'select')} variant="outline">Back</Button>
         <Button form="mfa-setup-form" loading={setupForm.isLoading}>Set Up</Button>

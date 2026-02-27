@@ -25,19 +25,17 @@
           description: error.issues[0].message,
           position: 'top-center'
         });
+      } else {
+        toast.error('Something went wrong', {
+          position: 'top-center'
+        });
       }
     }
   });
 
   let showPassword = $state(false);
   const passwordType = $derived(showPassword ? 'text' : 'password');
-
-  $inspect(form.getFieldIssues('password'));
 </script>
-
-<svelte:head>
-  <title>Login</title>
-</svelte:head>
 
 <div class="flex min-h-dvh items-center justify-center sm:py-18">
   <Card.Root class="w-full rounded-none bg-card/50 sm:max-w-md sm:rounded-lg">
@@ -46,7 +44,7 @@
       <Card.Description>Enter your credentials to access your account.</Card.Description>
     </Card.Header>
     <Card.Content class="">
-      <form id="login-form" {...form.form} {@attach form.enhance}>
+      <form {...form.form} {@attach form.enhance}>
         <Field.Set disabled={form.isLoading}>
           <Field.Group class="gap-4">
             <Field.Field>
@@ -108,7 +106,9 @@
     </Card.Content>
 
     <Card.Footer class="justify-end gap-4 border-t bg-card">
-      <Button class="w-full" form="login-form" loading={form.isLoading} type="submit">Login</Button>
+      <Button class="flex-1" form={form.formId} loading={form.isLoading} type="submit">
+        Login
+      </Button>
     </Card.Footer>
   </Card.Root>
 </div>

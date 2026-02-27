@@ -8,7 +8,7 @@ export const load: PageServerLoad = async () => {
   const setup = await db.query.systemSetupTable.findFirst();
 
   if (setup?.completedAt) {
-    redirect(303, '/login');
+    redirect(303, '/admin/login');
   }
 
   return {};

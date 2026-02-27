@@ -51,6 +51,10 @@ const systemRelations = defineRelationsPart(schema, (r) => ({
   },
 
   systemUsersTable: {
+    employeeData: r.one.systemEmployeesTable({
+      from: r.systemUsersTable.id,
+      to: r.systemEmployeesTable.userId
+    }),
     groups: r.many.systemGroupsTable({
       from: r.systemUsersTable.id.through(r.systemGroupUsersTable.userId),
       to: r.systemGroupsTable.id.through(r.systemGroupUsersTable.groupId)
@@ -80,6 +84,13 @@ const systemRelations = defineRelationsPart(schema, (r) => ({
     organization: r.one.systemOrganizationsTable({
       from: r.systemSetupTable.organizationId,
       to: r.systemOrganizationsTable.id
+    })
+  },
+
+  systemEmployeesTable: {
+    user: r.one.systemUsersTable({
+      from: r.systemEmployeesTable.userId,
+      to: r.systemUsersTable.id
     })
   }
 }));

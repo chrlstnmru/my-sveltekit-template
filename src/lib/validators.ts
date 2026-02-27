@@ -24,6 +24,31 @@ export const Password = v.pipe(
   v.maxLength(254, 'Password must be at most 254 characters long')
 );
 
+export const Numeric = v.pipe(
+  v.union([v.string(), v.number()]),
+  v.transform((value) => {
+    if (typeof value === 'number') return value;
+    // Clean and parse string
+    const cleaned = value.replace(/[$,\s]/g, '');
+    const num = Number(cleaned);
+    if (Number.isNaN(num) || !Number.isFinite(num)) {
+      throw new TypeError('Invalid number');
+    }
+    return num;
+  }),
+  v.number()
+);
+
+export const Booleanish = v.pipe(
+  v.union([v.boolean(), v.string()]),
+  v.transform((value) => {
+    if (typeof value === 'string') {
+      return value.toLowerCase() === 'true' || value === '1' || value === 'on' || value === 'yes';
+    }
+    return value;
+  })
+);
+
 export const LoginSchema = v.object({
   email: v.pipe(
     v.string('Email is required'),
@@ -68,4 +93,37 @@ export const SetupSchema = v.object({
     v.email()
   ),
   password: Password
+});
+
+export const PasswordPolicySchema = v.object({
+  requirements: v.optional(
+    v.object({
+      uppercase: v.optional(Booleanish),
+      lowercase: v.optional(Booleanish),
+      numbers: v.optional(Booleanish),
+      symbols: v.optional(Booleanish)
+    })
+  ),
+  minLength: v.pipe(Numeric, v.gtValue(7, 'Minimum length cannot be less than 8')),
+  preventPasswordReuse: v.pipe(Numeric, v.gtValue(-1, 'Invalid value'))
+});
+
+export const SessionPolicySchema = v.object({
+  maxConcurrentSessions: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
+  idleTimeoutMinutes: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
+  sessionTimeoutMinutes: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
+  rememberMeAbsoluteTimeoutDays: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
+  sessionExpiryWarningMinutes: v.pipe(Numeric, v.gtValue(-1, 'Invalid value'))
+});
+
+export const NestedTest = v.object({
+  test: v.object({
+    switch: v.boolean(),
+    test: v.object({
+      name: v.pipe(v.string(), v.trim(), v.nonEmpty('Name is required'))
+    })
+  }),
+  test2: v.object({
+    switch: v.optional(v.boolean())
+  })
 });

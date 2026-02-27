@@ -22,7 +22,6 @@ export type SessionPolicyConfig = {
   maxConcurrentSessions: number;
   sessionIdleTimeoutMinutes: number;
   sessionAbsoluteTimeoutMinutes: number;
-  enableRememberMe: boolean;
   rememberMeAbsoluteTimeoutDays: number;
   sessionExpiryWarningMinutes: number;
 };
@@ -30,10 +29,10 @@ export type SessionPolicyConfig = {
 export type PasswordPolicyConfig = {
   minLength: number;
   requirements: {
-    uppercase: boolean;
-    lowercase: boolean;
-    numbers: boolean;
-    symbols: boolean;
+    uppercase?: boolean;
+    lowercase?: boolean;
+    numbers?: boolean;
+    symbols?: boolean;
   };
   maxPasswordAgeDays?: number | null;
   preventPasswordReuse: number;

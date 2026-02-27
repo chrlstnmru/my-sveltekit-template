@@ -5,19 +5,13 @@ declare global {
   namespace App {
     // interface Error {}
     interface Locals {
-      user: {
-        id: string;
-        organizationId: string;
-        email: string;
-        username: string | null;
-        displayName: string | null;
-      } | null;
-      session: {
-        id: string;
-        userId: string;
-      } | null;
+      user: import('$lib/server/auth/service').User | null;
+      session: import('$lib/server/auth/service').Session | null;
     }
-    // interface PageData {}
+    interface PageData {
+      user: App.Locals['user'];
+      session: App.Locals['session'];
+    }
     // interface PageState {}
     // interface Platform {}
   }

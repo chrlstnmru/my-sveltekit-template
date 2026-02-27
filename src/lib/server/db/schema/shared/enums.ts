@@ -18,6 +18,7 @@ export const sharedMFAMethods = createSharedEnum('mfa_method', [
 ]);
 
 export const sharedRevokeReasons = createSharedEnum('revoke_reason', [
+  'user_revoked',
   'expired',
   'password_change',
   'mfa_change',

@@ -20,7 +20,9 @@ export const remoteLoginForm = form(LoginSchema, async (data) => {
   );
 
   if (!result.success) {
-    return invalid({ message: result.error || 'Login failed' });
+    // NOTE: Not yet implemented in remote function form
+    // return invalid(issue.email('Invalid credentials'));
+    return invalid(result.error ?? 'Invalid credentials');
   }
 
   if (result.requiresMfa && result.mfaChallengeId) {

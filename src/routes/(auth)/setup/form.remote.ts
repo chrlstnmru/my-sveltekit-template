@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 
-import { form, getRequestEvent } from '$app/server';
+import { form } from '$app/server';
 import { hashPassword } from '$lib/server/auth/crypto';
 import { db } from '$lib/server/db';
 import {
@@ -15,7 +15,7 @@ import {
 import { SetupSchema } from '$lib/validators';
 
 export const remoteSetupForm = form(SetupSchema, async (data, invalid) => {
-  const { getClientAddress, request } = getRequestEvent();
+  // const { getClientAddress, request } = getRequestEvent();
   const existingSetup = await db.query.systemSetupTable.findFirst();
 
   if (existingSetup?.completedAt) {
@@ -80,8 +80,8 @@ export const remoteSetupForm = form(SetupSchema, async (data, invalid) => {
     });
 
     // Login user
-    const ipAddress = await getClientAddress();
-    const userAgent = request.headers.get('user-agent') ?? null;
+    // const ipAddress = await getClientAddress();
+    // const userAgent = request.headers.get('user-agent') ?? null;
   } catch (error) {
     console.error(error);
     return invalid('Failed to setup organization');

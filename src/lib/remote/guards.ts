@@ -1,4 +1,5 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
+import type { RemoteFormInput } from '@sveltejs/kit';
 
 import { error } from '@sveltejs/kit';
 
@@ -85,14 +86,14 @@ type WithAuthFormContext<Schema extends StandardSchemaV1> = {
   invalid: WithAuthFormInvalid<Schema> & ((message?: string) => StandardSchemaV1.Issue);
 };
 
-export function withAuthForm<Schema extends StandardSchemaV1, Output>(
+export function withAuthForm<Schema extends StandardSchemaV1<RemoteFormInput>, Output>(
   schema: Schema,
   fn: (
     data: StandardSchemaV1.InferOutput<Schema>,
     ctx: WithAuthFormContext<Schema>
   ) => Promise<Output>
 ) {
-  return form<any, Output>(schema, async (data, invalid) => {
+  return form<Schema, Output>(schema, async (data, invalid) => {
     const auth = getAuthContext();
     return fn(data, { auth, invalid: invalid as any });
   });

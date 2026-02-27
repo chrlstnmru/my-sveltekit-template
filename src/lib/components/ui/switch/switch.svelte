@@ -10,7 +10,9 @@
     class: className,
     checked = $bindable(false),
     ...restProps
-  }: WithoutChildrenOrChild<SwitchPrimitive.RootProps> = $props();
+  }: Omit<WithoutChildrenOrChild<SwitchPrimitive.RootProps>, 'type'> & { type?: any } = $props();
+
+  const { type: _, ...noTypeProps } = $derived(restProps);
 </script>
 
 <SwitchPrimitive.Root
@@ -19,9 +21,10 @@
     className
   )}
   data-slot="switch"
+  type="button"
   bind:ref
   bind:checked
-  {...restProps}
+  {...noTypeProps}
 >
   <SwitchPrimitive.Thumb
     class={cn(
