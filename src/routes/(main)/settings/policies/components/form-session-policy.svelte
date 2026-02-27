@@ -8,7 +8,7 @@
   import * as Card from '$lib/components/ui/card';
   import * as Field from '$lib/components/ui/field';
   import { InputNumber } from '$lib/components/ui/input-number';
-  import { useAuth } from '$lib/hooks/auth.svelte';
+  import { useAuth } from '$lib/hooks/use-auth.svelte';
   import {
     remoteGetSessionPolicy,
     remoteUpdateSessionPolicy

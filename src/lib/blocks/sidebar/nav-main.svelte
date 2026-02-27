@@ -1,7 +1,7 @@
 <script lang="ts">
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 
-  import type { AppRoute } from '$lib/config';
+  import type { AppRoute } from '$lib/constants/config';
 
   import { page } from '$app/state';
   import * as Collapsible from '$lib/components/ui/collapsible';

@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
 
   import { page } from '$app/state';
-  import { getRoute } from '$lib/config';
+  import { getRoute } from '$lib/constants/config';
   import { cn } from '$lib/utils';
 
   const {

@@ -6,7 +6,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { exit } from 'node:process';
 import postgres from 'postgres';
 
-import { PERMISSIONS } from '$lib/const';
+import { PERMISSIONS } from '$lib/constants/permissions';
 import { sharedPermissionsTable } from '$lib/server/db/schema';
 
 import { createDrizzleConfig } from './config';

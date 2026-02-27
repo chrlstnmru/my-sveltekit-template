@@ -2,7 +2,7 @@
   import type { ComponentProps } from 'svelte';
 
   import * as Sidebar from '$lib/components/ui/sidebar';
-  import { APP_ROUTES } from '$lib/config';
+  import { APP_ROUTES } from '$lib/constants/config';
 
   import NavMain from './nav-main.svelte';
   import NavUser from './nav-user.svelte';

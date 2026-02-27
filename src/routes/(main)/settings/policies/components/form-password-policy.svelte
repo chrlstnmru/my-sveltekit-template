@@ -9,7 +9,7 @@
   import * as Field from '$lib/components/ui/field';
   import { InputNumber } from '$lib/components/ui/input-number';
   import { Switch } from '$lib/components/ui/switch';
-  import { useAuth } from '$lib/hooks/auth.svelte';
+  import { useAuth } from '$lib/hooks/use-auth.svelte';
   import {
     remoteGetPasswordPolicy,
     remoteUpdatePasswordPolicy

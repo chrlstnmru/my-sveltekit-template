@@ -3,7 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import type { systemEmployeesTable } from '$lib/server/db/schema';
 import type { RevokeReason, SessionPolicyConfig } from '$lib/server/db/types';
 
-import { DEFAULT_SESSION_POLICY_CONFIG } from '$lib/const';
+import { DEFAULT_SESSION_POLICY_CONFIG } from '$lib/constants/policies';
 import { db } from '$lib/server/db';
 import {
   systemUserMfaBackupCodesTable,

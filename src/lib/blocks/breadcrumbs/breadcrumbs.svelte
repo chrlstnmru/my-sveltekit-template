@@ -1,7 +1,7 @@
 <script lang="ts" module>
-  import type { AppRoute } from '$lib/config';
+  import type { AppRoute } from '$lib/constants/config';
 
-  import { APP_ROUTES } from '$lib/config';
+  import { APP_ROUTES } from '$lib/constants/config';
 
   function getCrumbs(currentPath: string) {
     const crumbs: { title: string; url: string; current: boolean; navigateable?: boolean }[] = [];

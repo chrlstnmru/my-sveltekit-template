@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { AppRoute } from '$lib/config';
+  import type { AppRoute } from '$lib/constants/config';
 
   import { page } from '$app/state';
   import favicon from '$lib/assets/favicon.svg';
   import { Toaster } from '$lib/components/ui/sonner';
   import { TooltipProvider } from '$lib/components/ui/tooltip';
-  import { APP_ROUTES } from '$lib/config';
-  import { setAuthContext } from '$lib/hooks/auth.svelte';
+  import { APP_ROUTES } from '$lib/constants/config';
+  import { setAuthContext } from '$lib/hooks/use-auth.svelte';
 
   import '../app.css';
 

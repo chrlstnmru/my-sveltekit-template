@@ -1,7 +1,7 @@
 import { isNull } from "drizzle-orm";
 import { index, jsonb } from "drizzle-orm/pg-core";
 
-import { DEFAULT_LOCKOUT_POLICY_CONFIG, DEFAULT_MFA_POLICY_CONFIG, DEFAULT_OAUTH_POLICY_CONFIG, DEFAULT_PASSOWRD_POLICY_CONFIG, DEFAULT_SESSION_POLICY_CONFIG } from "$lib/const";
+import { DEFAULT_LOCKOUT_POLICY_CONFIG, DEFAULT_MFA_POLICY_CONFIG, DEFAULT_OAUTH_POLICY_CONFIG, DEFAULT_PASSOWRD_POLICY_CONFIG, DEFAULT_SESSION_POLICY_CONFIG } from "$lib/constants/policies";
 
 import type { LockoutPolicyConfig, MFAPolicyConfig, OAuthPolicyConfig, PasswordPolicyConfig, SessionPolicyConfig } from "../../types";
 
