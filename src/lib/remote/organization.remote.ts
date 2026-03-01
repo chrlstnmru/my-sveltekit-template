@@ -8,14 +8,14 @@ import { db } from '$lib/server/db';
 import { systemOrganizationSettingsTable } from '$lib/server/db/schema';
 import { SessionPolicySchema } from '$lib/validators';
 
-import { withAuthForm, withAuthQuery } from './guards';
+import { formWithAuth, queryWithAuth } from './guards';
 
-export const remoteGetOrganizationSettings = withAuthQuery(async () => {
+export const remoteGetOrganizationSettings = queryWithAuth(async () => {
   const settings = await db.query.systemOrganizationSettingsTable.findFirst();
   return settings;
 });
 
-export const remoteGetSessionPolicy = withAuthQuery(
+export const remoteGetSessionPolicy = queryWithAuth(
   v.object({
     organizationId: v.nullish(v.string())
   }),
@@ -41,7 +41,7 @@ export const remoteGetSessionPolicy = withAuthQuery(
   }
 );
 
-export const remoteUpdateSessionPolicy = withAuthForm(SessionPolicySchema, async (data, ctx) => {
+export const remoteUpdateSessionPolicy = formWithAuth(SessionPolicySchema, async (data, ctx) => {
   const [policy] = await db
     .update(systemOrganizationSettingsTable)
     .set({

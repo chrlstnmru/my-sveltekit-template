@@ -1,4 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm';
+import * as v from 'valibot';
 
 import type { systemEmployeesTable } from '$lib/server/db/schema';
 import type { RevokeReason, SessionPolicyConfig } from '$lib/server/db/types';
@@ -12,6 +13,7 @@ import {
   systemUserSessionsTable,
   systemUsersTable
 } from '$lib/server/db/schema';
+import { SessionPolicySchema } from '$lib/validators';
 
 import {
   generateBackupCodes,
@@ -29,34 +31,33 @@ export type User = Omit<typeof systemUsersTable.$inferSelect, 'password'> & {
 };
 export type Session = typeof systemUserSessionsTable.$inferSelect;
 
-type RefreshTokensSuccess = {
-  success: true;
-  accessToken: string;
-  refreshToken: string;
+type Never<T extends object> = {
+  [K in keyof T]?: never;
 };
 
-type RefreshTokensFailure = {
+type SuccessResult<T> = {
+  success: true;
+} & T;
+
+// eslint-disable-next-line ts/no-empty-object-type
+type FailureResult<T extends Record<string, unknown> = {}> = {
   success: false;
   error: string;
+} & T;
+
+type Tokens = {
+  accessToken: string;
+  accessTokenExpiresAt: Date;
+  refreshToken: string;
+  refreshTokenExpiresAt: Date;
 };
 
-type RefreshTokensResult = RefreshTokensSuccess | RefreshTokensFailure;
+type MfaRequied = { requiresMfa: true; mfaChallengeId: string };
 
-type ValidateSessionSuccess = {
-  valid: true;
-  session: Session;
-  user: User;
-};
-
-type ValidateSessionFailure = {
-  valid: false;
-  error: string;
-};
-
-type ValidateSessionResult = ValidateSessionSuccess | ValidateSessionFailure;
-
-/** @default 8 hours */
-export const ACCESS_TOKEN_TIMEOUT_MINUTES = 60 * 60 * 8;
+type LoginResult =
+  | SuccessResult<MfaRequied & Never<Tokens>>
+  | SuccessResult<Tokens & Never<MfaRequied>>
+  | FailureResult;
 
 export class AuthService {
   private getOrganizationSettings = async (organizationId: string) => {
@@ -64,14 +65,6 @@ export class AuthService {
       where: { organizationId }
     });
     return settings;
-  };
-
-  private getSessionPolicy = async (organizationId: string): Promise<SessionPolicyConfig> => {
-    const settings = await this.getOrganizationSettings(organizationId);
-    if (!settings?.sessionPolicyConfig) {
-      return DEFAULT_SESSION_POLICY_CONFIG;
-    }
-    return settings.sessionPolicyConfig as SessionPolicyConfig;
   };
 
   private revokeOtherSessions = async (userId: string, reason: RevokeReason) => {
@@ -83,12 +76,38 @@ export class AuthService {
       );
   };
 
+  private generateSessionTokens = (
+    accessTokenTimeoutMs: number,
+    refreshTokenTimeoutMs: number,
+    now?: Date
+  ) => {
+    const dateNow = now ?? new Date();
+
+    const accessToken = generateToken(32);
+    const accessTokenHash = hashToken(accessToken);
+    const accessTokenExpiresAt = new Date(dateNow.getTime() + accessTokenTimeoutMs);
+
+    const refreshToken = generateToken(32);
+    const refreshTokenHash = hashToken(refreshToken);
+    const refreshTokenExpiresAt = new Date(dateNow.getTime() + refreshTokenTimeoutMs);
+
+    return {
+      now: dateNow,
+      accessToken,
+      accessTokenHash,
+      accessTokenExpiresAt,
+      refreshToken,
+      refreshTokenHash,
+      refreshTokenExpiresAt
+    };
+  };
+
   private createSession = async (
     userId: string,
     ipAddress: string | null,
     userAgent: string | null,
     rememberMe: boolean = false
-  ): Promise<{ session: Session; accessToken: string; refreshToken: string }> => {
+  ): Promise<Tokens> => {
     const user = await db.query.systemUsersTable.findFirst({
       where: { id: userId }
     });
@@ -103,27 +122,23 @@ export class AuthService {
       await this.revokeOtherSessions(userId, 'session_limit_exceeded');
     }
 
-    const accessToken = generateToken(32);
-    const refreshToken = generateToken(32);
+    const accessTokenTimeoutMs = sessionPolicy.accessTokenLifetimeMinutes * 60 * 1000;
+    const refreshTokenTimeoutMs = sessionPolicy.refreshTokenLifetimeMinutes * 60 * 1000;
+    const refreshTokenAbsoluteExpiresAt = rememberMe
+      ? new Date(Date.now() + sessionPolicy.rememberMeDays * 24 * 60 * 60 * 1000)
+      : new Date(Date.now() + refreshTokenTimeoutMs);
 
-    const accessTokenHash = hashToken(accessToken);
-    const refreshTokenHash = hashToken(refreshToken);
+    const {
+      now,
+      accessToken,
+      accessTokenHash,
+      accessTokenExpiresAt,
+      refreshToken,
+      refreshTokenHash,
+      refreshTokenExpiresAt
+    } = this.generateSessionTokens(accessTokenTimeoutMs, refreshTokenTimeoutMs);
 
-    const now = new Date();
-    const accessTokenExpiresAt = new Date(
-      now.getTime() + sessionPolicy.sessionAbsoluteTimeoutMinutes * 60 * 1000
-    );
-
-    let refreshTokenExpiresAt: Date;
-    if (rememberMe) {
-      refreshTokenExpiresAt = new Date(
-        now.getTime() + sessionPolicy.rememberMeAbsoluteTimeoutDays * 24 * 60 * 60 * 1000
-      );
-    } else {
-      refreshTokenExpiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    }
-
-    const [session] = await db
+    await db
       .insert(systemUserSessionsTable)
       .values({
         userId,
@@ -133,11 +148,41 @@ export class AuthService {
         accessTokenExpiresAt,
         refreshToken: refreshTokenHash,
         refreshTokenExpiresAt,
+        refreshTokenAbsoluteExpiresAt,
         lastActivityAt: now
       })
       .returning();
 
-    return { session, accessToken, refreshToken };
+    return { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt };
+  };
+
+  revokeTokens = async (accessToken: string, refreshToken: string, reason: RevokeReason) => {
+    await db
+      .update(systemUserSessionsTable)
+      .set({ revokedAt: new Date(), revokeReason: reason })
+      .where(
+        and(
+          eq(systemUserSessionsTable.accessToken, accessToken),
+          eq(systemUserSessionsTable.refreshToken, refreshToken)
+        )
+      );
+  };
+
+  getSessionPolicy = async (organizationId: string): Promise<SessionPolicyConfig> => {
+    const settings = await this.getOrganizationSettings(organizationId);
+    if (!settings?.sessionPolicyConfig) {
+      return DEFAULT_SESSION_POLICY_CONFIG;
+    }
+
+    const sessionPolicyParser = v.safeParser(SessionPolicySchema);
+    const sessionPolicy = sessionPolicyParser(settings.sessionPolicyConfig);
+
+    if (!sessionPolicy.success) {
+      console.warn('Failed to parse session policy: ', v.flatten(sessionPolicy.issues));
+      return DEFAULT_SESSION_POLICY_CONFIG;
+    }
+
+    return sessionPolicy.output as SessionPolicyConfig;
   };
 
   validateCredentials = async (
@@ -177,18 +222,10 @@ export class AuthService {
     ipAddress: string | null,
     userAgent: string | null,
     rememberMe: boolean = false
-  ): Promise<{
-    success: boolean;
-    requiresMfa?: boolean;
-    session?: Session;
-    accessToken?: string;
-    refreshToken?: string;
-    mfaChallengeId?: string;
-    error?: string;
-  }> => {
+  ): Promise<LoginResult> => {
     const validation = await this.validateCredentials(email, password);
     if (!validation.success || !validation.user) {
-      return { success: false, error: validation.error };
+      return { success: false, error: validation.error ?? 'Invalid credentials' };
     }
 
     const user = validation.user;
@@ -220,7 +257,7 @@ export class AuthService {
       };
     }
 
-    const result = await this.createSession(user.id, ipAddress, userAgent, rememberMe);
+    const tokens = await this.createSession(user.id, ipAddress, userAgent, rememberMe);
 
     await db
       .update(systemUsersTable)
@@ -229,10 +266,7 @@ export class AuthService {
 
     return {
       success: true,
-      requiresMfa: false,
-      session: result.session,
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken
+      ...tokens
     };
   };
 
@@ -242,13 +276,7 @@ export class AuthService {
     ipAddress: string | null,
     userAgent: string | null,
     rememberMe: boolean = false
-  ): Promise<{
-    success: boolean;
-    session?: Session;
-    accessToken?: string;
-    refreshToken?: string;
-    error?: string;
-  }> => {
+  ): Promise<SuccessResult<Tokens> | FailureResult> => {
     const challenge = await db.query.systemUserMfaChallengesTable.findFirst({
       where: { id: challengeId }
     });
@@ -284,13 +312,11 @@ export class AuthService {
       .set({ verifiedAt: new Date() })
       .where(eq(systemUserMfaChallengesTable.id, challengeId));
 
-    const result = await this.createSession(challenge.userId, ipAddress, userAgent, rememberMe);
+    const tokens = await this.createSession(challenge.userId, ipAddress, userAgent, rememberMe);
 
     return {
       success: true,
-      session: result.session,
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken
+      ...tokens
     };
   };
 
@@ -305,7 +331,9 @@ export class AuthService {
     return { success: true };
   };
 
-  validateSession = async (accessToken: string): Promise<ValidateSessionResult> => {
+  validateSession = async (
+    accessToken: string
+  ): Promise<SuccessResult<{ session: Session; user: User }> | FailureResult> => {
     const accessTokenHash = hashToken(accessToken);
 
     const session = await db.query.systemUserSessionsTable.findFirst({
@@ -315,19 +343,15 @@ export class AuthService {
     });
 
     if (!session) {
-      return { valid: false, error: 'Invalid session' };
+      return { success: false, error: 'Invalid session' };
     }
 
     if (session.revokedAt) {
-      return { valid: false, error: session.revokeReason ?? 'revoked' };
+      return { success: false, error: session.revokeReason ?? 'revoked' };
     }
 
     if (new Date() > session.accessTokenExpiresAt) {
-      await db
-        .update(systemUserSessionsTable)
-        .set({ revokedAt: new Date() })
-        .where(eq(systemUserSessionsTable.id, session.id));
-      return { valid: false, error: 'Session expired' };
+      return { success: false, error: 'Session expired' };
     }
 
     const user = await db.query.systemUsersTable.findFirst({
@@ -346,11 +370,8 @@ export class AuthService {
     });
 
     if (!user || user.deletedAt) {
-      await db
-        .update(systemUserSessionsTable)
-        .set({ revokedAt: new Date() })
-        .where(eq(systemUserSessionsTable.id, session.id));
-      return { valid: false, error: 'User not found' };
+      await this.revokeTokens(session.accessToken, session.refreshToken, 'expired');
+      return { success: false, error: 'User not found' };
     }
 
     await db
@@ -358,10 +379,10 @@ export class AuthService {
       .set({ lastActivityAt: new Date() })
       .where(eq(systemUserSessionsTable.id, session.id));
 
-    return { valid: true, session, user };
+    return { success: true, session, user };
   };
 
-  refreshTokens = async (refreshToken: string): Promise<RefreshTokensResult> => {
+  refreshTokens = async (refreshToken: string): Promise<SuccessResult<Tokens> | FailureResult> => {
     const refreshTokenHash = hashToken(refreshToken);
 
     const session = await db.query.systemUserSessionsTable.findFirst({
@@ -377,23 +398,29 @@ export class AuthService {
     if (new Date() > session.refreshTokenExpiresAt) {
       await db
         .update(systemUserSessionsTable)
-        .set({ revokedAt: new Date() })
+        .set({ revokedAt: new Date(), revokeReason: 'expired' })
         .where(eq(systemUserSessionsTable.id, session.id));
       return { success: false, error: 'Refresh token expired' };
     }
 
-    const accessToken = generateToken(32);
-    const newRefreshToken = generateToken(32);
-
-    const accessTokenHash = hashToken(accessToken);
-    const newRefreshTokenHash = hashToken(newRefreshToken);
-
     const sessionPolicy = await this.getSessionPolicy(session.userId);
 
-    const accessTokenExpiresAt = new Date(
-      Date.now() + sessionPolicy.sessionAbsoluteTimeoutMinutes * 60 * 1000
-    );
-    const refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const accessTokenTimeoutMs = sessionPolicy.accessTokenLifetimeMinutes * 60 * 1000;
+    const refreshTokenTimeoutMs = sessionPolicy.refreshTokenLifetimeMinutes * 60 * 1000;
+
+    const {
+      accessToken,
+      accessTokenHash,
+      accessTokenExpiresAt,
+      refreshToken: newRefreshToken,
+      refreshTokenHash: newRefreshTokenHash,
+      refreshTokenExpiresAt: newRefreshTokenExpiresAt
+    } = this.generateSessionTokens(accessTokenTimeoutMs, refreshTokenTimeoutMs);
+
+    if (newRefreshTokenExpiresAt >= session.refreshTokenAbsoluteExpiresAt) {
+      await this.revokeTokens(accessToken, refreshToken, 'expired');
+      return { success: false, error: 'Refresh token expired' };
+    }
 
     await db
       .update(systemUserSessionsTable)
@@ -401,7 +428,7 @@ export class AuthService {
         accessToken: accessTokenHash,
         accessTokenExpiresAt,
         refreshToken: newRefreshTokenHash,
-        refreshTokenExpiresAt,
+        refreshTokenExpiresAt: newRefreshTokenExpiresAt,
         lastActivityAt: new Date()
       })
       .where(eq(systemUserSessionsTable.id, session.id));
@@ -409,7 +436,9 @@ export class AuthService {
     return {
       success: true,
       accessToken,
-      refreshToken: newRefreshToken
+      accessTokenExpiresAt,
+      refreshToken: newRefreshToken,
+      refreshTokenExpiresAt: newRefreshTokenExpiresAt
     };
   };
 

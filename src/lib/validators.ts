@@ -1,53 +1,6 @@
 import * as v from 'valibot';
 
-export const Slug = v.pipe(
-  v.string('Slug is required'),
-  v.trim(),
-  v.nonEmpty('Slug is required'),
-  v.regex(
-    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    'Slug must contain only lowercase letters, numbers, and dashes'
-  ),
-  v.minLength(3, 'Slug must be at least 3 characters long'),
-  v.maxLength(64, 'Slug must be at most 64 characters long')
-);
-
-export const Password = v.pipe(
-  v.string('Password is required'),
-  v.trim(),
-  v.nonEmpty('Password is required'),
-  v.regex(/[a-z]/, 'Password must contain at least one lowercase letter'),
-  v.regex(/[A-Z]/, 'Password must contain at least one uppercase letter'),
-  v.regex(/\d/, 'Password must contain at least one digit'),
-  v.regex(/[^a-z\d]/i, 'Password must contain at least one special character'),
-  v.minLength(8, 'Password must be at least 8 characters long'),
-  v.maxLength(254, 'Password must be at most 254 characters long')
-);
-
-export const Numeric = v.pipe(
-  v.union([v.string(), v.number()]),
-  v.transform((value) => {
-    if (typeof value === 'number') return value;
-    // Clean and parse string
-    const cleaned = value.replace(/[$,\s]/g, '');
-    const num = Number(cleaned);
-    if (Number.isNaN(num) || !Number.isFinite(num)) {
-      throw new TypeError('Invalid number');
-    }
-    return num;
-  }),
-  v.number()
-);
-
-export const Booleanish = v.pipe(
-  v.union([v.boolean(), v.string()]),
-  v.transform((value) => {
-    if (typeof value === 'string') {
-      return value.toLowerCase() === 'true' || value === '1' || value === 'on' || value === 'yes';
-    }
-    return value;
-  })
-);
+import { booleanish, numeric, password, slug } from './validators/helpers';
 
 export const LoginSchema = v.object({
   email: v.pipe(
@@ -57,7 +10,7 @@ export const LoginSchema = v.object({
     v.email('Invalid email address')
   ),
   password: v.pipe(v.string('Password is required'), v.nonEmpty('Password is required')),
-  rememberMe: v.optional(v.boolean(), false)
+  rememberMe: v.optional(booleanish(), false)
 });
 
 export const MfaVerifySchema = v.object({
@@ -78,7 +31,7 @@ export const SetupSchema = v.object({
     v.minLength(3, 'Organization name must be at least 3 characters long'),
     v.maxLength(128, 'Organization name must be at most 128 characters long')
   ),
-  orgSlug: Slug,
+  orgSlug: slug('Organization slug'),
   name: v.pipe(
     v.string('Name is required'),
     v.trim(),
@@ -92,13 +45,44 @@ export const SetupSchema = v.object({
     v.nonEmpty('Email is required'),
     v.email()
   ),
-  password: Password
+  password: password()
 });
 
-export const SessionPolicySchema = v.object({
-  maxConcurrentSessions: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
-  idleTimeoutMinutes: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
-  sessionTimeoutMinutes: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
-  rememberMeAbsoluteTimeoutDays: v.pipe(Numeric, v.gtValue(-1, 'Invalid value')),
-  sessionExpiryWarningMinutes: v.pipe(Numeric, v.gtValue(-1, 'Invalid value'))
-});
+export const SessionPolicySchema = v.pipe(
+  v.object({
+    maxConcurrentSessions: v.pipe(
+      numeric(),
+      v.minValue(0, 'Invalid value'),
+      v.maxValue(5, 'Cannot exceed 5 concurrent sessions')
+    ),
+    sessionIdleTimeoutMinutes: v.pipe(
+      numeric(),
+      v.minValue(0, 'Invalid value'),
+      v.maxValue(60, 'Cannot exceed 60 minutes of idle duration')
+    ),
+    accessTokenLifetimeMinutes: v.pipe(
+      numeric(),
+      v.minValue(5, 'Access token lifetime must be at least 5 minutes'),
+      v.maxValue(240, 'Access token lifetime must be at most 240 minutes')
+    ),
+    refreshTokenLifetimeMinutes: v.pipe(
+      numeric(),
+      v.minValue(0, 'Invalid value'),
+      v.maxValue(1440, 'Refresh token lifetime must be at most 1440 minutes')
+    ),
+    rememberMeDays: v.pipe(
+      numeric(),
+      v.minValue(0, 'Invalid value'),
+      v.check((input) => input >= 7, 'Remember me must be at least 7 days'),
+      v.maxValue(30, 'Remember me must be at most 30 days')
+    )
+  }),
+  v.forward(
+    v.partialCheck(
+      [['accessTokenLifetimeMinutes'], ['refreshTokenLifetimeMinutes']],
+      (input) => input.accessTokenLifetimeMinutes * 6 <= input.refreshTokenLifetimeMinutes,
+      'Refresh token lifetime must be at least 6 times the access token lifetime'
+    ),
+    ['refreshTokenLifetimeMinutes']
+  )
+);

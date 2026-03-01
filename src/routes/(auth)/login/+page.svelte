@@ -17,7 +17,7 @@
 
   const form = new FormManager(remoteLoginForm, {
     schema: LoginSchema,
-    usePreflight: true,
+    disableToastsOnFailure: true,
     onfailure: (error, fm) => {
       if (error instanceof FormValidationError) {
         fm.setFieldValue('password', '');
@@ -99,6 +99,8 @@
                 />
                 <Field.Label class="mt-0!">Remember me</Field.Label>
               </div>
+
+              <Field.Error errors={form.getFieldIssues('rememberMe')} />
             </Field.Field>
           </Field.Group>
         </Field.Set>

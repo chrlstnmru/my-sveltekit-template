@@ -1,6 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 
-import { form } from '$app/server';
+import { dev } from '$app/environment';
+import { form, getRequestEvent } from '$app/server';
+import { authService } from '$lib/server/auth';
 import { hashPassword } from '$lib/server/auth/crypto';
 import { db } from '$lib/server/db';
 import {
@@ -15,7 +17,7 @@ import {
 import { SetupSchema } from '$lib/validators';
 
 export const remoteSetupForm = form(SetupSchema, async (data, invalid) => {
-  // const { getClientAddress, request } = getRequestEvent();
+  const { getClientAddress, request, cookies } = getRequestEvent();
   const existingSetup = await db.query.systemSetupTable.findFirst();
 
   if (existingSetup?.completedAt) {
@@ -33,9 +35,12 @@ export const remoteSetupForm = form(SetupSchema, async (data, invalid) => {
         })
         .returning();
 
-      await tx.insert(systemOrganizationSettingsTable).values({
-        organizationId: organization.id
-      });
+      await tx
+        .insert(systemOrganizationSettingsTable)
+        .values({
+          organizationId: organization.id
+        })
+        .returning();
 
       const passwordHash = await hashPassword(data.password);
 
@@ -77,11 +82,42 @@ export const remoteSetupForm = form(SetupSchema, async (data, invalid) => {
         rootUserId: user.id,
         completedAt: new Date()
       });
+
+      return organization.id;
     });
 
     // Login user
-    // const ipAddress = await getClientAddress();
-    // const userAgent = request.headers.get('user-agent') ?? null;
+    const ipAddress = getClientAddress();
+    const userAgent = request.headers.get('user-agent') ?? null;
+
+    const result = await authService.login(data.email, data.password, ipAddress, userAgent, false);
+
+    if (!result.success) {
+      // NOTE: Not yet implemented in remote function form
+      // return invalid(issue.email('Invalid credentials'));
+      return invalid(result.error ?? 'Invalid credentials');
+    }
+
+    if (result.accessToken && result.refreshToken) {
+      const accessTokenMaxAge = result.accessTokenExpiresAt.getTime() / 1000;
+      const refreshTokenMaxAge = result.refreshTokenExpiresAt.getTime() / 1000;
+
+      cookies.set('access_token', result.accessToken, {
+        path: '/',
+        httpOnly: true,
+        secure: !dev,
+        sameSite: 'lax',
+        maxAge: accessTokenMaxAge
+      });
+
+      cookies.set('refresh_token', result.refreshToken, {
+        path: '/',
+        httpOnly: true,
+        secure: !dev,
+        sameSite: 'lax',
+        maxAge: refreshTokenMaxAge
+      });
+    }
   } catch (error) {
     console.error(error);
     return invalid('Failed to setup organization');

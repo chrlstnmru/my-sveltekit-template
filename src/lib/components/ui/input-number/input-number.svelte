@@ -239,15 +239,15 @@
   const handleInput = async (e: Event) => {
     const input = e.target as HTMLInputElement;
     const rawValue = input.value;
-    // const selectionStart = input.selectionStart || 0;
+    const selectionStart = input.selectionStart || 0;
 
     updateValue(parseValue(rawValue, false));
 
     // Smart cursor positioning
-    // if (ref && document.activeElement === ref) {
-    //   const newCursor = Math.min(selectionStart, rawValue.length);
-    //   ref.setSelectionRange(newCursor, newCursor);
-    // }
+    if (ref && document.activeElement === ref) {
+      const newCursor = Math.min(selectionStart, rawValue.length);
+      ref.setSelectionRange(newCursor, newCursor);
+    }
   };
 
   const handleBlur = async (e: FocusEvent) => {

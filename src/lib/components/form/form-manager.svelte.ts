@@ -6,7 +6,9 @@ import type {
   RemoteFormIssue
 } from '@sveltejs/kit';
 
+import { isHttpError } from '@sveltejs/kit';
 import { tick, untrack } from 'svelte';
+import { toast } from 'svelte-sonner';
 import { on } from 'svelte/events';
 import { SvelteSet } from 'svelte/reactivity';
 
@@ -40,6 +42,9 @@ export type FormOptions<Input extends RemoteFormInput, Output> = {
   clearOnSubmit?: boolean;
   validationStrategy?: ValidationStrategy;
   usePreflight?: boolean;
+  warnOnUnsavedChanges?: boolean;
+  /** Disable default toasts on form failure */
+  disableToastsOnFailure?: boolean;
   onsuccess?: (data: Output, formManager: FormManager<RemoteForm<Input, Output>>) => void;
   onfailure?: (
     error: FormValidationError | unknown,
@@ -99,6 +104,7 @@ export class FormManager<
     });
 
     beforeNavigate(({ cancel }) => {
+      if (!this.options.warnOnUnsavedChanges) return;
       if (!this.tainted || this.remoteForm.pending) return;
       if (warnedForms.has(this.options.id)) return;
       if (!this.shouldShowTaintedWarning()) return;
@@ -132,7 +138,7 @@ export class FormManager<
         this.submitted = true;
         this.loading = true;
 
-        await submit();
+        await submit().updates();
 
         if (this.options.clearOnSubmit) {
           form.reset();
@@ -147,6 +153,14 @@ export class FormManager<
         this.captureInitialValues(data);
         this.clearTainted();
       } catch (e) {
+        if (!this.options.disableToastsOnFailure) {
+          if (e instanceof FormValidationError) {
+            toast.error(e.message);
+          } else if (isHttpError(e)) {
+            toast.error(e.body.message);
+          }
+        }
+
         this.options.onfailure?.(e, this);
       } finally {
         this.loading = false;
@@ -279,6 +293,7 @@ export class FormManager<
     this.loading = false;
     this.clearTainted();
     this.captureInitialValues();
+    this.validate(true);
   }
 
   clear() {
@@ -400,14 +415,16 @@ export class FormManager<
     options?: FormOptions<Input, Output>
   ): Required<FormOptions<Input, Output>> {
     return {
+      id: this.generateId(),
       clearOnSubmit: false,
       usePreflight: true,
       validationStrategy: 'auto',
       schema: undefined as any,
+      defaultValues: undefined as any,
+      warnOnUnsavedChanges: false,
       onsuccess: undefined as any,
       onfailure: undefined as any,
-      defaultValues: undefined as any,
-      id: this.generateId(),
+      disableToastsOnFailure: false,
       ...options
     };
   }

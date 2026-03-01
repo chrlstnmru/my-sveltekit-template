@@ -1,4 +1,7 @@
 import type { InferEnum, InferInsertModel } from 'drizzle-orm';
+import type * as v from 'valibot';
+
+import type { SessionPolicySchema } from '$lib/validators';
 
 import type {
   sharedMFAMethods,
@@ -18,13 +21,7 @@ export type MFAMethod = InferEnum<typeof sharedMFAMethods>;
 export type OAuthProvider = InferEnum<typeof sharedOAuthProviders>;
 export type RevokeReason = InferEnum<typeof sharedRevokeReasons>;
 
-export type SessionPolicyConfig = {
-  maxConcurrentSessions: number;
-  sessionIdleTimeoutMinutes: number;
-  sessionAbsoluteTimeoutMinutes: number;
-  rememberMeAbsoluteTimeoutDays: number;
-  sessionExpiryWarningMinutes: number;
-};
+export type SessionPolicyConfig = v.InferOutput<typeof SessionPolicySchema>;
 
 export type MFAPolicyConfig = {
   required: boolean;

@@ -1,10 +1,9 @@
 import { isNull } from "drizzle-orm";
 import { index, jsonb } from "drizzle-orm/pg-core";
 
-import { DEFAULT_LOCKOUT_POLICY_CONFIG, DEFAULT_MFA_POLICY_CONFIG, DEFAULT_OAUTH_POLICY_CONFIG, DEFAULT_SESSION_POLICY_CONFIG } from "$lib/constants/policies";
-
 import type { LockoutPolicyConfig, MFAPolicyConfig, OAuthPolicyConfig, SessionPolicyConfig } from "../../types";
 
+import { DEFAULT_LOCKOUT_POLICY_CONFIG, DEFAULT_MFA_POLICY_CONFIG, DEFAULT_OAUTH_POLICY_CONFIG, DEFAULT_SESSION_POLICY_CONFIG } from "../../../../constants/policies";
 import { createSystemTable, text, timestamptz, uuidv7 } from "../helpers";
 import { systemUsersTable } from "./users";
 

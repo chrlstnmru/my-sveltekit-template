@@ -17,7 +17,7 @@ function getAuthContext(): AuthContext {
   const { locals } = getRequestEvent();
 
   if (!locals.user || !locals.session) {
-    error(401, 'Unauthorized');
+    return error(401, 'Unauthorized');
   }
 
   return {
@@ -26,16 +26,16 @@ function getAuthContext(): AuthContext {
   };
 }
 
-export function withAuthQuery<Output>(
+export function queryWithAuth<Output>(
   fn: (auth: AuthContext) => Promise<Output>
 ): ReturnType<typeof query<Output>>;
 
-export function withAuthQuery<Schema extends StandardSchemaV1, Output>(
+export function queryWithAuth<Schema extends StandardSchemaV1, Output>(
   schema: Schema,
   fn: (input: StandardSchemaV1.InferOutput<Schema>, auth: AuthContext) => Promise<Output>
 ): ReturnType<typeof query<Schema, Output>>;
 
-export function withAuthQuery<Schema extends StandardSchemaV1, Output>(
+export function queryWithAuth<Schema extends StandardSchemaV1, Output>(
   schemaOrFn: Schema | ((auth: AuthContext) => Promise<Output>),
   maybeFn?: (input: StandardSchemaV1.InferOutput<Schema>, auth: AuthContext) => Promise<Output>
 ) {
@@ -52,16 +52,16 @@ export function withAuthQuery<Schema extends StandardSchemaV1, Output>(
   });
 }
 
-export function withAuthCommand<Output>(
+export function commandWithAuth<Output>(
   fn: (auth: AuthContext) => Promise<Output>
 ): ReturnType<typeof command<Output>>;
 
-export function withAuthCommand<Schema extends StandardSchemaV1, Output>(
+export function commandWithAuth<Schema extends StandardSchemaV1, Output>(
   schema: Schema,
   fn: (input: StandardSchemaV1.InferOutput<Schema>, auth: AuthContext) => Promise<Output>
 ): ReturnType<typeof command<Schema, Output>>;
 
-export function withAuthCommand<Schema extends StandardSchemaV1, Output>(
+export function commandWithAuth<Schema extends StandardSchemaV1, Output>(
   schemaOrFn: Schema | ((auth: AuthContext) => Promise<Output>),
   maybeFn?: (input: StandardSchemaV1.InferOutput<Schema>, auth: AuthContext) => Promise<Output>
 ) {
@@ -86,7 +86,7 @@ type WithAuthFormContext<Schema extends StandardSchemaV1> = {
   invalid: WithAuthFormInvalid<Schema> & ((message?: string) => StandardSchemaV1.Issue);
 };
 
-export function withAuthForm<Schema extends StandardSchemaV1<RemoteFormInput>, Output>(
+export function formWithAuth<Schema extends StandardSchemaV1<RemoteFormInput>, Output>(
   schema: Schema,
   fn: (
     data: StandardSchemaV1.InferOutput<Schema>,
@@ -95,6 +95,7 @@ export function withAuthForm<Schema extends StandardSchemaV1<RemoteFormInput>, O
 ) {
   return form<Schema, Output>(schema, async (data, invalid) => {
     const auth = getAuthContext();
+
     return fn(data, { auth, invalid: invalid as any });
   });
 }

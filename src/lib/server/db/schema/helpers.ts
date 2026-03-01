@@ -1,4 +1,5 @@
-import type { PgUUIDBuilder, SetHasDefault } from 'drizzle-orm/pg-core';
+import type { SQL} from 'drizzle-orm';
+import type { AnyPgColumn, PgUUIDBuilder, SetHasDefault } from 'drizzle-orm/pg-core';
 
 import { sql } from 'drizzle-orm';
 import { pgSchema, pgTable, text as pgText, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
@@ -44,4 +45,8 @@ export function timestamptz({ update }: Partial<TimestamptzOptions> | undefined 
 export function text({ length, enum: enumValues }: Partial<TextOptions> | undefined = {}) {
   const enumData = enumValues ? { enum: enumValues } : {};
   return length ? varchar({ length, ...enumData }) : pgText({ ...enumData });
+}
+
+export function lower(expr: SQL | AnyPgColumn) {
+  return sql`LOWER(${expr})`;
 }

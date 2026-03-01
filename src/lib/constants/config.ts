@@ -4,6 +4,13 @@ import type { Component } from 'svelte';
 import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 import SettingsIcon from '@lucide/svelte/icons/settings';
 
+export const ACCESS_TOKEN_COOKIE = 'access_token';
+export const REFRESH_TOKEN_COOKIE = 'refresh_token';
+export const MFA_CHALLENGE_COOKIE = 'mfa_challenge_id';
+
+/** @default 5 minutes */
+export const ACCESS_TOKEN_TIMEOUT_MINUTES = 5;
+
 export type AppRoute = {
   title: string;
   description?: string;
@@ -27,6 +34,11 @@ export const APP_ROUTES: AppRoute[] = [
     icon: SettingsIcon,
     navigateable: false,
     items: [
+      {
+        url: '/settings/general',
+        title: 'General',
+        description: 'Manage your organization settings'
+      },
       {
         url: '/settings/policies',
         title: 'Policies',

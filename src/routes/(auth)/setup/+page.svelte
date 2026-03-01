@@ -15,8 +15,7 @@
   import { remoteSetupForm } from './form.remote';
 
   const form = new FormManager(remoteSetupForm, {
-    schema: SetupSchema,
-    usePreflight: true
+    schema: SetupSchema
   });
   const generateSlug = () => {
     const name = form.getFieldValue('orgName');
@@ -41,9 +40,8 @@
         process.
       </Card.Description>
     </Card.Header>
-    <!-- <Separator /> -->
-    <Card.Content class="">
-      <form id="setup-form" {...form.form} {@attach form.enhance}>
+    <Card.Content>
+      <form {...form.form} {@attach form.enhance}>
         <Field.Set disabled={form.isLoading}>
           <Field.Group class="gap-4">
             <Field.Field>
@@ -131,7 +129,7 @@
     </Card.Content>
 
     <Card.Footer class="justify-end gap-4 border-t bg-card">
-      <Button form="setup-form" loading={form.isLoading} type="submit">Finish</Button>
+      <Button form={form.formId} loading={form.isLoading} type="submit">Finish</Button>
     </Card.Footer>
   </Card.Root>
 </div>

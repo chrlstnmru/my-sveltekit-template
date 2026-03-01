@@ -5,6 +5,8 @@ import type { sharedPermissionScope } from '$lib/server/db/schema';
 export const PERMISSIONS = [
   { key: '*', name: 'Root' },
 
+  { key: 'auth.session.update-policy', name: 'Update Session Policy' },
+
   { key: 'auth.user.create', name: 'Create User' },
   { key: 'auth.user.list', name: 'List All Users' },
   { key: 'auth.user.view', name: 'View User' },

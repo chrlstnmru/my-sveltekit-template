@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 
-import { authService } from '$lib/server/auth';
+import { authService, clearAuthCookies } from '$lib/server/auth';
 
 import type { RequestHandler } from './$types';
 
@@ -13,9 +13,7 @@ export const POST: RequestHandler = async (event) => {
     await authService.logout(accessToken);
   }
 
-  cookies.delete('access_token', { path: '/' });
-  cookies.delete('refresh_token', { path: '/' });
-  cookies.delete('mfa_challenge_id', { path: '/' });
+  clearAuthCookies(cookies);
 
   locals.user = null;
   locals.session = null;

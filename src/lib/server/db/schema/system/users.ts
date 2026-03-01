@@ -40,6 +40,7 @@ export const systemUserSessionsTable = createSystemTable('user_sessions', {
   accessTokenExpiresAt: timestamptz().notNull(),
   refreshToken: text().notNull().unique(),
   refreshTokenExpiresAt: timestamptz().notNull(),
+  refreshTokenAbsoluteExpiresAt: timestamptz().notNull(),
   lastActivityAt: timestamptz().defaultNow(),
   revokeReason: sharedRevokeReasons(),
   createdAt: timestamptz().defaultNow(),

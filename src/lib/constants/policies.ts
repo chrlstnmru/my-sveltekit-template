@@ -8,9 +8,9 @@ import type {
 export const DEFAULT_SESSION_POLICY_CONFIG: SessionPolicyConfig = {
   maxConcurrentSessions: 1,
   sessionIdleTimeoutMinutes: 15,
-  sessionAbsoluteTimeoutMinutes: 28800, // 8 hours
-  rememberMeAbsoluteTimeoutDays: 30,
-  sessionExpiryWarningMinutes: 10
+  accessTokenLifetimeMinutes: 10,
+  refreshTokenLifetimeMinutes: 60,
+  rememberMeDays: 30
 };
 
 export const DEFAULT_MFA_POLICY_CONFIG: MFAPolicyConfig = {

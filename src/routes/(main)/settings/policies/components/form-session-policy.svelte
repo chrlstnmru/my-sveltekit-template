@@ -2,7 +2,7 @@
   import { toast } from 'svelte-sonner';
   import { fade } from 'svelte/transition';
 
-  import { FormManager, FormValidationError } from '$lib/components/form/form-manager.svelte';
+  import { FormManager } from '$lib/components/form/form-manager.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as ButtonGroup from '$lib/components/ui/button-group';
   import * as Card from '$lib/components/ui/card';
@@ -27,12 +27,7 @@
     defaultValues,
     usePreflight: true,
     onfailure: (error) => {
-      if (error instanceof FormValidationError) {
-        toast.error(error.message);
-      } else {
-        $inspect(error);
-        toast.error('Failed to update session policy');
-      }
+      console.error(error);
     },
     onsuccess: () => {
       toast.success('Session policy updated');
@@ -40,7 +35,6 @@
   });
 
   const isFormTainted = $derived(form.isTainted);
-  $inspect(remoteUpdateSessionPolicy.fields.value());
 </script>
 
 {#snippet FieldHint(props: {
@@ -75,6 +69,10 @@
   hint?: string;
   suffix?: string;
   placeholder?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  decimalScale?: number;
 })}
   <Field.Field class="flex-row items-center">
     <div>
@@ -92,9 +90,13 @@
       {:else}
         <InputNumber
           {...props.fieldProps}
+          decimalScale={props.decimalScale}
           emptyAsZero
           formatOnMount
+          max={props.max}
+          min={props.min}
           placeholder={props.placeholder}
+          step={props.step}
         />
       {/if}
 
@@ -126,35 +128,33 @@
           title: 'Idle Timeout',
           description: 'Set the idle timeout for idle sessions',
           hint: 'Set the value to 0 to disable this feature',
-          fieldProps: form.getFieldProps('idleTimeoutMinutes', 'text'),
-          errors: form.getFieldIssues('idleTimeoutMinutes'),
+          fieldProps: form.getFieldProps('sessionIdleTimeoutMinutes', 'text'),
+          errors: form.getFieldIssues('sessionIdleTimeoutMinutes'),
           suffix: 'minutes'
         })}
 
         {@render NumberInputField({
-          title: 'Session Timeout',
+          title: 'Access Token Lifetime',
+          description: 'Set the lifetime of access tokens',
+          fieldProps: form.getFieldProps('accessTokenLifetimeMinutes', 'text'),
+          errors: form.getFieldIssues('accessTokenLifetimeMinutes'),
+          suffix: 'minutes'
+        })}
+
+        {@render NumberInputField({
+          title: 'Refresh Token Lifetime',
           description: 'Set the timeout for active sessions',
-          hint: 'Set the value to 0 to disable this feature',
-          fieldProps: form.getFieldProps('sessionTimeoutMinutes', 'text'),
-          errors: form.getFieldIssues('sessionTimeoutMinutes'),
+          fieldProps: form.getFieldProps('refreshTokenLifetimeMinutes', 'text'),
+          errors: form.getFieldIssues('refreshTokenLifetimeMinutes'),
           suffix: 'minutes'
         })}
 
         {@render NumberInputField({
-          title: 'Expiry Warning',
-          description: 'Set the warning time before session expiry',
+          title: 'Remember Me',
+          description: 'Set how long to remember the user session',
           hint: 'Set the value to 0 to disable this feature',
-          fieldProps: form.getFieldProps('sessionExpiryWarningMinutes', 'text'),
-          errors: form.getFieldIssues('sessionExpiryWarningMinutes'),
-          suffix: 'minutes'
-        })}
-
-        {@render NumberInputField({
-          title: 'Extended Session Timeout',
-          description: 'Set the timeout for remember me',
-          hint: 'Set the value to 0 to disable this feature',
-          fieldProps: form.getFieldProps('rememberMeAbsoluteTimeoutDays', 'text'),
-          errors: form.getFieldIssues('rememberMeAbsoluteTimeoutDays'),
+          fieldProps: form.getFieldProps('rememberMeDays', 'text'),
+          errors: form.getFieldIssues('rememberMeDays'),
           suffix: 'days'
         })}
       </Field.Group>

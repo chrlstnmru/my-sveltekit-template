@@ -1,6 +1,7 @@
+import { isNull } from "drizzle-orm";
 import { boolean, integer, primaryKey, text, uniqueIndex } from "drizzle-orm/pg-core";
 
-import { createSystemTable, timestamptz, uuidv7 } from "../helpers";
+import { createSystemTable, lower, timestamptz, uuidv7 } from "../helpers";
 import { sharedPermissionScope, sharedPermissionsTable } from "../shared";
 import { systemGroupsTable } from "./groups";
 import { systemOrganizationsTable } from "./organizations";
@@ -17,7 +18,9 @@ export const systemRolesTable = createSystemTable('roles', {
   createdAt: timestamptz().defaultNow(),
   updatedAt: timestamptz({ update: true }).defaultNow(),
   deletedAt: timestamptz(),
-});
+}, (t) => [
+  uniqueIndex('roles_organization_id_name_index').on(t.organizationId, lower(t.name)).where(isNull(t.deletedAt)),
+]);
 
 export const systemRolePermissionsTable = createSystemTable('role_permissions', {
   roleId: uuidv7({ withDefault: false }).notNull().references(() => systemRolesTable.id),
